@@ -98,7 +98,7 @@ export function PipelineDiagram() {
 
           {/* inspection feedback edge, held visually secondary */}
           <g className="text-[color:var(--line)] opacity-60">
-            <DrawnPath d="M430 156 L430 244" dashed strokeWidth={1} />
+            <DrawnPath d="M20 258 L6 258 L6 142 L20 142" dashed strokeWidth={1} />
           </g>
 
           {NODES.map((node, i) => (
