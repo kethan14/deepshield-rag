@@ -1,11 +1,8 @@
-# DeepShield-RAG roadmap
+# DeepShield-RAG — light monochrome redesign
 
-## Current task: light monochrome editorial redesign
-- [ ] Replace design tokens with light blue-grey palette (#F7F9FC, #EEF3F8, #FFFFFF, #DCE6F0, #AFC3D6, #607D99, #24435F, #102A43)
-- [ ] Fonts: Manrope headings, Inter body, IBM Plex Mono technical labels
-- [ ] Install framer-motion; reduced-motion respected
-- [ ] Rename /policy-assistant route to /assistant
-- [ ] Navbar + mobile menu + footer in new style
-- [ ] Homepage continuous scroll story: intro split + SVG pipeline diagram, failure paths, sticky 6-stage process, C0/C1/C2 configurations, benchmark matrix, final CTA + disclaimer
-- [ ] Redesign /assistant, /attack-lab, /experiments, /evidence shells
-- [ ] Verify build and all routes render at 1440/1024/768/390
+- [x] Light blue-grey palette + Manrope / Inter / IBM Plex Mono in styles.css
+- [x] Motion primitives with reduced-motion support
+- [x] Navbar (active state, mobile menu) + footer
+- [x] Homepage story: intro pipeline, failure paths, sticky process, C0/C1/C2, coverage matrix, closing + disclaimer
+- [x] Workspace shells: /assistant, /attack-lab, /experiments, /evidence
+- [x] Routes verified at 1440 / 1024 / 768 / 390, no console errors, no horizontal overflow
