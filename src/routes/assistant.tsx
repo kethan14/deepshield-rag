@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/policy-assistant")({
+export const Route = createFileRoute("/assistant")({
   head: () => ({
     meta: [
       { title: "Policy Assistant — DeepShield-RAG" },

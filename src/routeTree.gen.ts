@@ -10,14 +10,19 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as AttackLabRouteImport } from './routes/attack-lab'
 import { Route as EvidenceRouteImport } from './routes/evidence'
 import { Route as ExperimentsRouteImport } from './routes/experiments'
-import { Route as PolicyAssistantRouteImport } from './routes/policy-assistant'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistantRoute = AssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AttackLabRoute = AttackLabRouteImport.update({
@@ -35,55 +40,49 @@ const ExperimentsRoute = ExperimentsRouteImport.update({
   path: '/experiments',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PolicyAssistantRoute = PolicyAssistantRouteImport.update({
-  id: '/policy-assistant',
-  path: '/policy-assistant',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/attack-lab': typeof AttackLabRoute
   '/evidence': typeof EvidenceRoute
   '/experiments': typeof ExperimentsRoute
-  '/policy-assistant': typeof PolicyAssistantRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/attack-lab': typeof AttackLabRoute
   '/evidence': typeof EvidenceRoute
   '/experiments': typeof ExperimentsRoute
-  '/policy-assistant': typeof PolicyAssistantRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/attack-lab': typeof AttackLabRoute
   '/evidence': typeof EvidenceRoute
   '/experiments': typeof ExperimentsRoute
-  '/policy-assistant': typeof PolicyAssistantRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    '/' | '/attack-lab' | '/evidence' | '/experiments' | '/policy-assistant'
+  fullPaths: '/' | '/assistant' | '/attack-lab' | '/evidence' | '/experiments'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/attack-lab' | '/evidence' | '/experiments' | '/policy-assistant'
+  to: '/' | '/assistant' | '/attack-lab' | '/evidence' | '/experiments'
   id:
     | '__root__'
     | '/'
+    | '/assistant'
     | '/attack-lab'
     | '/evidence'
     | '/experiments'
-    | '/policy-assistant'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AssistantRoute: typeof AssistantRoute
   AttackLabRoute: typeof AttackLabRoute
   EvidenceRoute: typeof EvidenceRoute
   ExperimentsRoute: typeof ExperimentsRoute
-  PolicyAssistantRoute: typeof PolicyAssistantRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -93,6 +92,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistant': {
+      id: '/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AssistantRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/attack-lab': {
@@ -116,22 +122,15 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExperimentsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/policy-assistant': {
-      id: '/policy-assistant'
-      path: '/policy-assistant'
-      fullPath: '/policy-assistant'
-      preLoaderRoute: typeof PolicyAssistantRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AssistantRoute: AssistantRoute,
   AttackLabRoute: AttackLabRoute,
   EvidenceRoute: EvidenceRoute,
   ExperimentsRoute: ExperimentsRoute,
-  PolicyAssistantRoute: PolicyAssistantRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
