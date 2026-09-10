@@ -113,9 +113,16 @@ export function ProcessSection() {
 
                 <motion.div
                   key={current.id}
-                  initial={reduce ? undefined : { opacity: 0, y: 12 }}
-                  animate={reduce ? undefined : { opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
+                  {...(reduce
+                    ? {}
+                    : {
+                        initial: { opacity: 0, y: 12 },
+                        animate: { opacity: 1, y: 0 },
+                        transition: {
+                          duration: 0.4,
+                          ease: [0.22, 0.61, 0.36, 1] as const,
+                        },
+                      })}
                 >
                   <h3 className="mt-5 font-display text-[22px] font-semibold tracking-tight text-foreground">
                     {current.name}
