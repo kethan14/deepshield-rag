@@ -1,10 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 import { Reveal } from "@/components/motion-primitives";
 
-type RouteTo = ComponentProps<typeof Link>["to"];
+export type RouteTo =
+  | "/"
+  | "/assistant"
+  | "/attack-lab"
+  | "/experiments"
+  | "/evidence";
 
 export function Shell({
   children,
