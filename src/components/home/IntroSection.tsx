@@ -69,7 +69,7 @@ const NODES = [
 ];
 
 const LINK_PATH =
-  "M110 68 L110 100 M110 156 L226 156 M334 156 L334 188 M226 244 L134 244";
+  "M110 96 L110 128 M200 156 L250 156 M334 184 L334 216 M250 244 L200 244";
 
 export function PipelineDiagram() {
   const reduce = useReducedMotion();
@@ -94,17 +94,11 @@ export function PipelineDiagram() {
         >
           <g className="text-[color:var(--line)]">
             <DrawnPath d={LINK_PATH} strokeWidth={1} duration={1.6} />
-            <DrawnPath
-              d="M334 100 L334 128"
-              strokeWidth={1}
-              duration={0.8}
-              delay={0.9}
-            />
           </g>
 
-          {/* return edge from guardrails back to retrieval, drawn faintly */}
-          <g className="text-[color:var(--line)] opacity-70">
-            <DrawnPath d="M226 172 L118 172" dashed strokeWidth={1} />
+          {/* inspection feedback edge, held visually secondary */}
+          <g className="text-[color:var(--line)] opacity-60">
+            <DrawnPath d="M430 156 L430 244" dashed strokeWidth={1} />
           </g>
 
           {NODES.map((node, i) => (
@@ -117,13 +111,13 @@ export function PipelineDiagram() {
               fill="var(--primary)"
               initial={{ cx: 110, cy: 68, opacity: 0 }}
               animate={{
-                cx: [110, 110, 226, 334, 334, 226, 134],
-                cy: [68, 156, 156, 156, 244, 244, 244],
-                opacity: [0, 1, 1, 1, 1, 1, 0],
+                cx: [110, 110, 200, 250, 334, 334, 250, 200],
+                cy: [96, 128, 156, 156, 184, 216, 244, 244],
+                opacity: [0, 1, 1, 1, 1, 1, 1, 0],
               }}
               transition={{
                 duration: 5.2,
-                times: [0, 0.16, 0.34, 0.5, 0.68, 0.86, 1],
+                times: [0, 0.14, 0.3, 0.42, 0.58, 0.72, 0.88, 1],
                 repeat: Infinity,
                 repeatDelay: 1.6,
                 ease: "linear",
