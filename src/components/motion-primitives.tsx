@@ -20,20 +20,22 @@ export function Reveal({
   const reduce = useReducedMotion();
   const Comp = motion[as];
 
+  const anim = reduce
+    ? {}
+    : {
+        initial: { opacity: 0, y: 16 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true, margin: "-64px" },
+        transition: { duration: 0.6, ease: EASE, delay },
+      };
+
   return (
-    <Comp
-      className={className}
-      initial={reduce ? undefined : { opacity: 0, y: 16 }}
-      whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-64px" }}
-      transition={{ duration: 0.6, ease: EASE, delay }}
-    >
+    <Comp className={cn(className)} {...anim}>
       {children}
     </Comp>
   );
 }
 
-/** Staggered container for lists of revealed children. */
 export const staggerParent: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.09 } },
@@ -52,11 +54,11 @@ export function StaggerList({
   className?: string;
 }) {
   const reduce = useReducedMotion();
-  if (reduce) return <ul className={className}>{children}</ul>;
+  if (reduce) return <ul className={cn(className)}>{children}</ul>;
 
   return (
     <motion.ul
-      className={className}
+      className={cn(className)}
       variants={staggerParent}
       initial="hidden"
       whileInView="show"
@@ -75,10 +77,10 @@ export function StaggerItem({
   className?: string;
 }) {
   const reduce = useReducedMotion();
-  if (reduce) return <li className={className}>{children}</li>;
+  if (reduce) return <li className={cn(className)}>{children}</li>;
 
   return (
-    <motion.li className={className} variants={staggerChild}>
+    <motion.li className={cn(className)} variants={staggerChild}>
       {children}
     </motion.li>
   );
@@ -93,13 +95,12 @@ export function HoverLift({
   className?: string;
 }) {
   const reduce = useReducedMotion();
+  const anim = reduce
+    ? {}
+    : { whileHover: { y: -2 }, transition: { duration: 0.2, ease: EASE } };
 
   return (
-    <motion.div
-      className={cn(className)}
-      whileHover={reduce ? undefined : { y: -2 }}
-      transition={{ duration: 0.2, ease: EASE }}
-    >
+    <motion.div className={cn(className)} {...anim}>
       {children}
     </motion.div>
   );
@@ -123,19 +124,26 @@ export function DrawnPath({
 }) {
   const reduce = useReducedMotion();
 
+  const anim =
+    reduce || dashed
+      ? {}
+      : {
+          initial: { pathLength: 0 },
+          whileInView: { pathLength: 1 },
+          viewport: { once: true, margin: "-80px" },
+          transition: { duration, ease: "easeInOut" as const, delay },
+        };
+
   return (
     <motion.path
       d={d}
-      className={className}
+      className={cn(className)}
       fill="none"
       stroke="currentColor"
       strokeWidth={strokeWidth}
       strokeLinecap="round"
-      strokeDasharray={dashed ? "3 5" : undefined}
-      initial={reduce || dashed ? undefined : { pathLength: 0 }}
-      whileInView={reduce || dashed ? undefined : { pathLength: 1 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration, ease: "easeInOut", delay }}
+      {...(dashed ? { strokeDasharray: "3 5" } : {})}
+      {...anim}
     />
   );
 }
