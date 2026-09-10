@@ -94,10 +94,17 @@ export function Navbar() {
           <motion.div
             id="mobile-nav"
             className="overflow-hidden border-t border-border bg-surface md:hidden"
-            initial={reduce ? undefined : { height: 0, opacity: 0 }}
-            animate={reduce ? undefined : { height: "auto", opacity: 1 }}
-            exit={reduce ? undefined : { height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
+            {...(reduce
+              ? {}
+              : {
+                  initial: { height: 0, opacity: 0 },
+                  animate: { height: "auto", opacity: 1 },
+                  exit: { height: 0, opacity: 0 },
+                  transition: {
+                    duration: 0.28,
+                    ease: [0.22, 0.61, 0.36, 1] as const,
+                  },
+                })}
           >
             <nav
               className="mx-auto max-w-[1200px] px-6 py-3"
