@@ -38,10 +38,7 @@ const destinations: {
 
 export function ClosingSection() {
   return (
-    <section
-      className="border-b border-border bg-surface-alt"
-      aria-labelledby="closing-heading"
-    >
+    <section className="border-b border-border bg-surface-alt" aria-labelledby="closing-heading">
       <Shell className="py-16 lg:py-24">
         <div className="grid gap-10 lg:grid-cols-12 lg:gap-12">
           <Reveal className="lg:col-span-4">
@@ -53,8 +50,8 @@ export function ClosingSection() {
               Explore the research prototype.
             </h2>
             <p className="mt-4 max-w-sm text-[14.5px] leading-relaxed text-muted-foreground">
-              Each workspace is an interface preview. The layouts are complete;
-              the evaluation backend is not connected yet.
+              Each workspace is an interface preview. The layouts are complete; the evaluation
+              backend is not connected yet.
             </p>
           </Reveal>
 
@@ -67,9 +64,7 @@ export function ClosingSection() {
                       to={dest.to}
                       className="group flex items-center gap-5 border-b border-border bg-transparent px-1 py-6 transition-colors hover:bg-surface"
                     >
-                      <span className="label-mono w-12 shrink-0">
-                        {dest.ref}
-                      </span>
+                      <span className="label-mono w-12 shrink-0">{dest.ref}</span>
                       <span className="min-w-0 flex-1">
                         <span className="block font-display text-[17px] font-semibold tracking-tight text-foreground">
                           {dest.name}

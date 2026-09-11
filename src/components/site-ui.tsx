@@ -4,34 +4,13 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Reveal } from "@/components/motion-primitives";
 
-export type RouteTo =
-  | "/"
-  | "/assistant"
-  | "/attack-lab"
-  | "/experiments"
-  | "/evidence";
+export type RouteTo = "/" | "/assistant" | "/attack-lab" | "/experiments" | "/evidence";
 
-export function Shell({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={cn("mx-auto max-w-[1200px] px-6 lg:px-10", className)}>
-      {children}
-    </div>
-  );
+export function Shell({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn("mx-auto max-w-[1200px] px-6 lg:px-10", className)}>{children}</div>;
 }
 
-export function Eyebrow({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
   return <p className={cn("label-mono", className)}>{children}</p>;
 }
 
@@ -52,12 +31,8 @@ export function SectionHeading({
     <Reveal className={cn("max-w-2xl", className)}>
       {(index || eyebrow) && (
         <div className="flex items-center gap-3">
-          {index && (
-            <span className="label-mono text-foreground/70">{index}</span>
-          )}
-          {index && eyebrow && (
-            <span className="h-[1px] w-8 bg-border" aria-hidden="true" />
-          )}
+          {index && <span className="label-mono text-foreground/70">{index}</span>}
+          {index && eyebrow && <span className="h-[1px] w-8 bg-border" aria-hidden="true" />}
           {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
         </div>
       )}
@@ -65,9 +40,7 @@ export function SectionHeading({
         {title}
       </h2>
       {description && (
-        <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
-          {description}
-        </p>
+        <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">{description}</p>
       )}
     </Reveal>
   );
@@ -95,7 +68,7 @@ export function ActionLink({
         variant === "primary"
           ? "bg-primary text-primary-foreground hover:bg-foreground"
           : "border border-border bg-surface text-foreground hover:border-[color:var(--line)] hover:bg-surface-alt",
-        className
+        className,
       )}
     >
       {children}
@@ -117,7 +90,7 @@ export function Panel({
       className={cn(
         "rounded-[14px] border border-border bg-surface",
         "shadow-[0_1px_2px_rgba(16,42,67,0.04),0_8px_24px_-16px_rgba(16,42,67,0.16)]",
-        className
+        className,
       )}
     >
       {children}
@@ -159,16 +132,14 @@ export function PrototypeNotice({
     <div
       className={cn(
         "flex items-start gap-3 rounded-[10px] border border-dashed border-[color:var(--line)] bg-surface-alt px-4 py-3",
-        className
+        className,
       )}
     >
       <span
         className="mt-[7px] h-[6px] w-[6px] shrink-0 rounded-full bg-[color:var(--line)]"
         aria-hidden="true"
       />
-      <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-        {children}
-      </p>
+      <p className="text-[12.5px] leading-relaxed text-muted-foreground">{children}</p>
     </div>
   );
 }
@@ -186,19 +157,14 @@ export function EmptyState({
 }) {
   return (
     <div
-      className={cn(
-        "flex flex-col items-center justify-center px-8 py-16 text-center",
-        className
-      )}
+      className={cn("flex flex-col items-center justify-center px-8 py-16 text-center", className)}
     >
       {icon && (
         <span className="mb-5 grid h-11 w-11 place-items-center rounded-[10px] border border-border bg-surface-alt text-muted-foreground">
           {icon}
         </span>
       )}
-      <h3 className="font-display text-[15px] font-semibold text-foreground">
-        {title}
-      </h3>
+      <h3 className="font-display text-[15px] font-semibold text-foreground">{title}</h3>
       <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
         {description}
       </p>
@@ -289,15 +255,10 @@ export function Toggle({
         className="mt-[3px] h-4 w-4 shrink-0 rounded-[4px] border border-border accent-[color:var(--primary)]"
       />
       <div className="min-w-0">
-        <label
-          htmlFor={id}
-          className="block font-display text-[13px] font-medium text-foreground"
-        >
+        <label htmlFor={id} className="block font-display text-[13px] font-medium text-foreground">
           {label}
         </label>
-        <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
-          {description}
-        </p>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">{description}</p>
       </div>
     </div>
   );
@@ -308,8 +269,8 @@ export function Disclaimer() {
     <div className="border-t border-border bg-surface-alt">
       <Shell className="py-8">
         <p className="mx-auto max-w-3xl text-center text-[12.5px] leading-relaxed text-muted-foreground">
-          The F-1 policy assistant is an academic research demonstration based on
-          public U.S. government documents. It does not provide legal advice.
+          The F-1 policy assistant is an academic research demonstration based on public U.S.
+          government documents. It does not provide legal advice.
         </p>
       </Shell>
     </div>

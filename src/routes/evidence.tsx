@@ -48,8 +48,8 @@ function EvidencePage() {
         description="Every evaluated request becomes one reviewable record: the prompt, what was retrieved, which guardrails acted, and what was returned."
         aside={
           <PrototypeNotice>
-            Interface preview — verified experiment records will appear here once
-            the evaluation backend is connected. Nothing is stored yet.
+            Interface preview — verified experiment records will appear here once the evaluation
+            backend is connected. Nothing is stored yet.
           </PrototypeNotice>
         }
       />

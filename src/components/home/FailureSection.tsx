@@ -21,10 +21,7 @@ const paths = [
 
 export function FailureSection() {
   return (
-    <section
-      className="border-b border-border bg-surface-alt"
-      aria-labelledby="failure-heading"
-    >
+    <section className="border-b border-border bg-surface-alt" aria-labelledby="failure-heading">
       <Shell className="py-16 lg:py-24">
         <SectionHeading
           index="01"

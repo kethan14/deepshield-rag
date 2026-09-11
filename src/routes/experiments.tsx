@@ -59,9 +59,8 @@ function ExperimentsPage() {
         description="The controlled comparison between configurations. Documents, model, and question set are held constant; only the defensive layers change."
         aside={
           <PrototypeNotice>
-            Planned experimental design. Comparison results will appear here
-            after the evaluation backend is integrated; no measurements exist
-            yet.
+            Planned experimental design. Comparison results will appear here after the evaluation
+            backend is integrated; no measurements exist yet.
           </PrototypeNotice>
         }
       />
@@ -75,21 +74,13 @@ function ExperimentsPage() {
                 id="exp-baseline"
                 label="Baseline"
                 value="C0 — Basic RAG"
-                options={[
-                  "C0 — Basic RAG",
-                  "C1 — Hardened RAG",
-                  "C2 — Layered DeepShield",
-                ]}
+                options={["C0 — Basic RAG", "C1 — Hardened RAG", "C2 — Layered DeepShield"]}
               />
               <StaticSelect
                 id="exp-candidate"
                 label="Candidate"
                 value="C2 — Layered DeepShield"
-                options={[
-                  "C0 — Basic RAG",
-                  "C1 — Hardened RAG",
-                  "C2 — Layered DeepShield",
-                ]}
+                options={["C0 — Basic RAG", "C1 — Hardened RAG", "C2 — Layered DeepShield"]}
               />
               <StaticSelect
                 id="exp-category"
@@ -125,19 +116,14 @@ function ExperimentsPage() {
         <div className="flex flex-col gap-6 lg:col-span-8">
           <Reveal delay={0.08}>
             <Panel>
-              <PanelHeader
-                title="Planned configurations"
-                meta="Not yet executed"
-              />
+              <PanelHeader title="Planned configurations" meta="Not yet executed" />
               <ul className="divide-y divide-border">
                 {configurations.map((config) => (
                   <li
                     key={config.id}
                     className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-4"
                   >
-                    <span className="font-mono text-[13px] text-primary">
-                      {config.id}
-                    </span>
+                    <span className="font-mono text-[13px] text-primary">{config.id}</span>
                     <span className="font-display text-[14px] font-medium text-foreground">
                       {config.name}
                     </span>
@@ -157,8 +143,7 @@ function ExperimentsPage() {
               <div className="p-5">
                 <div className="grid-field h-[220px] rounded-[10px] border border-dashed border-[color:var(--line)]" />
                 <p className="label-mono mt-4">
-                  Reserved for security and usefulness comparison across
-                  configurations
+                  Reserved for security and usefulness comparison across configurations
                 </p>
               </div>
             </Panel>

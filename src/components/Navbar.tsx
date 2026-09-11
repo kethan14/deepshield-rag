@@ -20,25 +20,18 @@ export function Navbar() {
     setIsOpen(false);
   }, [pathname]);
 
-  const isActive = (to: string) =>
-    to === "/" ? pathname === "/" : pathname.startsWith(to);
+  const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6 lg:px-10">
-        <Link
-          to="/"
-          className="group flex items-center gap-3"
-          aria-label="DeepShield-RAG home"
-        >
+        <Link to="/" className="group flex items-center gap-3" aria-label="DeepShield-RAG home">
           <Mark />
           <span className="flex flex-col leading-none">
             <span className="font-display text-[15px] font-semibold tracking-tight text-foreground">
               DeepShield-RAG
             </span>
-            <span className="label-mono mt-1 text-[10px]">
-              Capstone Research
-            </span>
+            <span className="label-mono mt-1 text-[10px]">Capstone Research</span>
           </span>
         </Link>
 
@@ -54,17 +47,13 @@ export function Navbar() {
                   color: active ? "var(--foreground)" : "var(--muted-foreground)",
                 }}
               >
-                <span className="relative z-10 hover:text-foreground">
-                  {item.label}
-                </span>
+                <span className="relative z-10 hover:text-foreground">{item.label}</span>
                 {active && (
                   <motion.span
                     layoutId="nav-active"
                     className="absolute inset-x-2 -bottom-[1px] h-[2px] bg-primary"
                     transition={
-                      reduce
-                        ? { duration: 0 }
-                        : { duration: 0.32, ease: [0.22, 0.61, 0.36, 1] }
+                      reduce ? { duration: 0 } : { duration: 0.32, ease: [0.22, 0.61, 0.36, 1] }
                     }
                   />
                 )}
@@ -106,10 +95,7 @@ export function Navbar() {
                   },
                 })}
           >
-            <nav
-              className="mx-auto max-w-[1200px] px-6 py-3"
-              aria-label="Mobile"
-            >
+            <nav className="mx-auto max-w-[1200px] px-6 py-3" aria-label="Mobile">
               <ul className="divide-y divide-border">
                 {navItems.map((item, i) => {
                   const active = isActive(item.to);
@@ -119,15 +105,11 @@ export function Navbar() {
                         to={item.to}
                         className="flex items-center justify-between py-3 text-sm font-medium"
                         style={{
-                          color: active
-                            ? "var(--foreground)"
-                            : "var(--muted-foreground)",
+                          color: active ? "var(--foreground)" : "var(--muted-foreground)",
                         }}
                       >
                         {item.label}
-                        <span className="label-mono text-[10px]">
-                          {String(i).padStart(2, "0")}
-                        </span>
+                        <span className="label-mono text-[10px]">{String(i).padStart(2, "0")}</span>
                       </Link>
                     </li>
                   );
@@ -148,15 +130,7 @@ function Mark() {
       aria-hidden="true"
     >
       <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]">
-        <rect
-          x="4.5"
-          y="4.5"
-          width="15"
-          height="15"
-          rx="2"
-          fill="none"
-          stroke="var(--line)"
-        />
+        <rect x="4.5" y="4.5" width="15" height="15" rx="2" fill="none" stroke="var(--line)" />
         <path d="M8 12h8M12 8v8" stroke="var(--line)" strokeWidth="1" />
         <rect x="9.5" y="9.5" width="5" height="5" fill="var(--primary)" />
       </svg>

@@ -46,13 +46,7 @@ export const staggerChild: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: EASE } },
 };
 
-export function StaggerList({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function StaggerList({ children, className }: { children: ReactNode; className?: string }) {
   const reduce = useReducedMotion();
   if (reduce) return <ul className={cn(className)}>{children}</ul>;
 
@@ -69,13 +63,7 @@ export function StaggerList({
   );
 }
 
-export function StaggerItem({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function StaggerItem({ children, className }: { children: ReactNode; className?: string }) {
   const reduce = useReducedMotion();
   if (reduce) return <li className={cn(className)}>{children}</li>;
 
@@ -87,17 +75,9 @@ export function StaggerItem({
 }
 
 /** Small hover lift, capped at 2px. */
-export function HoverLift({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function HoverLift({ children, className }: { children: ReactNode; className?: string }) {
   const reduce = useReducedMotion();
-  const anim = reduce
-    ? {}
-    : { whileHover: { y: -2 }, transition: { duration: 0.2, ease: EASE } };
+  const anim = reduce ? {} : { whileHover: { y: -2 }, transition: { duration: 0.2, ease: EASE } };
 
   return (
     <motion.div className={cn(className)} {...anim}>
