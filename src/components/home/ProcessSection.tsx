@@ -1,10 +1,5 @@
 import { useRef, useState } from "react";
-import {
-  motion,
-  useMotionValueEvent,
-  useReducedMotion,
-  useScroll,
-} from "framer-motion";
+import { motion, useMotionValueEvent, useReducedMotion, useScroll } from "framer-motion";
 
 import { Reveal } from "@/components/motion-primitives";
 import { Eyebrow, Shell } from "@/components/site-ui";
@@ -65,10 +60,7 @@ export function ProcessSection() {
   });
 
   useMotionValueEvent(scrollYProgress, "change", (v) => {
-    const next = Math.min(
-      stages.length - 1,
-      Math.max(0, Math.floor(v * stages.length))
-    );
+    const next = Math.min(stages.length - 1, Math.max(0, Math.floor(v * stages.length)));
     setActive(next);
   });
 
@@ -90,25 +82,19 @@ export function ProcessSection() {
             Six stages, each one recorded.
           </h2>
           <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
-            Evaluation is not a single verdict. A request is carried through six
-            stages, and each stage produces something that can be inspected on
-            its own.
+            Evaluation is not a single verdict. A request is carried through six stages, and each
+            stage produces something that can be inspected on its own.
           </p>
         </Reveal>
 
-        <div
-          ref={containerRef}
-          className="mt-12 grid gap-10 lg:grid-cols-12 lg:gap-12"
-        >
+        <div ref={containerRef} className="mt-12 grid gap-10 lg:grid-cols-12 lg:gap-12">
           {/* sticky explanation */}
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-28">
               <div className="rounded-[14px] border border-border bg-surface p-6 shadow-[0_1px_2px_rgba(16,42,67,0.04)]">
                 <div className="flex items-center justify-between">
                   <span className="label-mono">Stage {active + 1} of 6</span>
-                  <span className="label-mono text-foreground/70">
-                    {current.id}
-                  </span>
+                  <span className="label-mono text-foreground/70">{current.id}</span>
                 </div>
 
                 <motion.div
@@ -135,17 +121,13 @@ export function ProcessSection() {
                   </p>
                 </motion.div>
 
-                <div
-                  className="mt-6 flex gap-1.5 border-t border-border pt-5"
-                  aria-hidden="true"
-                >
+                <div className="mt-6 flex gap-1.5 border-t border-border pt-5" aria-hidden="true">
                   {stages.map((s, i) => (
                     <span
                       key={s.id}
                       className="h-[3px] flex-1 rounded-full transition-colors duration-300"
                       style={{
-                        backgroundColor:
-                          i <= active ? "var(--primary)" : "var(--border)",
+                        backgroundColor: i <= active ? "var(--primary)" : "var(--border)",
                       }}
                     />
                   ))}
@@ -164,30 +146,22 @@ export function ProcessSection() {
                   <span
                     className="absolute left-[11px] top-0 h-full w-[1px] sm:left-[15px]"
                     style={{
-                      backgroundColor: isPast
-                        ? "var(--primary)"
-                        : "var(--border)",
+                      backgroundColor: isPast ? "var(--primary)" : "var(--border)",
                     }}
                     aria-hidden="true"
                   />
                   <span
                     className="absolute left-0 top-[26px] grid h-[23px] w-[23px] place-items-center rounded-full border transition-colors duration-300 sm:left-1 sm:h-[23px] sm:w-[23px]"
                     style={{
-                      borderColor: isActive
-                        ? "var(--primary)"
-                        : "var(--border)",
-                      backgroundColor: isActive
-                        ? "var(--primary)"
-                        : "var(--surface)",
+                      borderColor: isActive ? "var(--primary)" : "var(--border)",
+                      backgroundColor: isActive ? "var(--primary)" : "var(--surface)",
                     }}
                     aria-hidden="true"
                   >
                     <span
                       className="font-mono text-[10px]"
                       style={{
-                        color: isActive
-                          ? "var(--primary-foreground)"
-                          : "var(--muted-foreground)",
+                        color: isActive ? "var(--primary-foreground)" : "var(--muted-foreground)",
                       }}
                     >
                       {i + 1}
@@ -201,9 +175,7 @@ export function ProcessSection() {
                     <h3
                       className="font-display text-[17px] font-semibold tracking-tight transition-colors duration-300"
                       style={{
-                        color: isActive
-                          ? "var(--foreground)"
-                          : "var(--muted-foreground)",
+                        color: isActive ? "var(--foreground)" : "var(--muted-foreground)",
                       }}
                     >
                       {stage.name}

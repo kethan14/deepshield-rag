@@ -57,8 +57,8 @@ export function CoverageSection() {
         <Reveal delay={0.08} className="mt-12 overflow-x-auto">
           <table className="w-full min-w-[680px] border-collapse text-left">
             <caption className="sr-only">
-              Planned benchmark coverage of six attack categories across three
-              experimental configurations.
+              Planned benchmark coverage of six attack categories across three experimental
+              configurations.
             </caption>
             <thead>
               <tr className="border-y border-border">
@@ -119,9 +119,7 @@ export function CoverageSection() {
             className="h-[9px] w-[9px] rounded-[2px] border border-[color:var(--line)]"
             aria-hidden="true"
           />
-          <span className="label-mono">
-            Planned evaluation cell — outcome not yet recorded
-          </span>
+          <span className="label-mono">Planned evaluation cell — outcome not yet recorded</span>
         </Reveal>
       </Shell>
     </section>

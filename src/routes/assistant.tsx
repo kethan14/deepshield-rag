@@ -41,8 +41,8 @@ function AssistantPage() {
         description="A retrieval-augmented assistant for F-1 student policy questions, used as the demonstration subject for every evaluation in this project."
         aside={
           <PrototypeNotice>
-            Interface preview — backend not connected. Conversations, retrieval,
-            and guardrail execution are not yet wired to a running pipeline.
+            Interface preview — backend not connected. Conversations, retrieval, and guardrail
+            execution are not yet wired to a running pipeline.
           </PrototypeNotice>
         }
       />
@@ -99,21 +99,14 @@ function AssistantPage() {
           <Reveal delay={0.14}>
             <Panel>
               <PanelHeader title="Defense configuration">
-                <SlidersHorizontal
-                  className="h-4 w-4 text-muted-foreground"
-                  aria-hidden="true"
-                />
+                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               </PanelHeader>
               <div className="space-y-4 p-5">
                 <StaticSelect
                   id="assistant-config"
                   label="Configuration"
                   value="C2 — Layered DeepShield"
-                  options={[
-                    "C0 — Basic RAG",
-                    "C1 — Hardened RAG",
-                    "C2 — Layered DeepShield",
-                  ]}
+                  options={["C0 — Basic RAG", "C1 — Hardened RAG", "C2 — Layered DeepShield"]}
                 />
                 <div className="divide-y divide-border border-t border-border">
                   <Toggle

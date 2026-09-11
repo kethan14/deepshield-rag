@@ -52,10 +52,7 @@ const configurations: {
 
 export function ComparisonSection() {
   return (
-    <section
-      className="border-b border-border bg-surface-alt"
-      aria-labelledby="comparison-heading"
-    >
+    <section className="border-b border-border bg-surface-alt" aria-labelledby="comparison-heading">
       <Shell className="py-16 lg:py-24">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading
@@ -96,10 +93,7 @@ export function ComparisonSection() {
                 <div className="lg:col-span-8">
                   <ol className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
                     {config.layers.map((layer, index) => (
-                      <li
-                        key={layer.label}
-                        className="relative flex-1 sm:min-w-0"
-                      >
+                      <li key={layer.label} className="relative flex-1 sm:min-w-0">
                         {index > 0 && (
                           <span
                             className="absolute -left-[6px] top-1/2 hidden h-[1px] w-[6px] bg-border sm:block"
@@ -177,12 +171,7 @@ function LayerCell({ layer }: { layer: Layer }) {
 
 function StateGlyph({ state }: { state: Layer["state"] }) {
   if (state === "present")
-    return (
-      <span
-        className="h-[10px] w-[10px] rounded-[3px] bg-primary"
-        aria-hidden="true"
-      />
-    );
+    return <span className="h-[10px] w-[10px] rounded-[3px] bg-primary" aria-hidden="true" />;
   if (state === "partial")
     return (
       <span

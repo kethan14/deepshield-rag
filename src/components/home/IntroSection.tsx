@@ -22,10 +22,9 @@ export function IntroSection() {
               Understand how secure a RAG assistant really is.
             </h1>
             <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-              DeepShield-RAG is an evaluation platform for retrieval-augmented
-              assistants. It runs structured adversarial prompts through layered
-              guardrail configurations and records the retrieval, decision, and
-              response evidence behind every outcome — so security and
+              DeepShield-RAG is an evaluation platform for retrieval-augmented assistants. It runs
+              structured adversarial prompts through layered guardrail configurations and records
+              the retrieval, decision, and response evidence behind every outcome — so security and
               usefulness can be examined side by side.
             </p>
           </Reveal>
@@ -41,10 +40,7 @@ export function IntroSection() {
             <ul className="flex flex-wrap gap-x-8 gap-y-3">
               {traits.map((trait) => (
                 <li key={trait} className="flex items-center gap-2">
-                  <span
-                    className="h-[5px] w-[5px] bg-[color:var(--line)]"
-                    aria-hidden="true"
-                  />
+                  <span className="h-[5px] w-[5px] bg-[color:var(--line)]" aria-hidden="true" />
                   <span className="label-mono">{trait}</span>
                 </li>
               ))}
@@ -68,8 +64,7 @@ const NODES = [
   { x: 20, y: 216, label: "Evidence capture", sub: "traceable record" },
 ];
 
-const LINK_PATH =
-  "M110 96 L110 128 M200 156 L250 156 M334 184 L334 216 M250 244 L200 244";
+const LINK_PATH = "M110 96 L110 128 M200 156 L250 156 M334 184 L334 216 M250 244 L200 244";
 
 export function PipelineDiagram() {
   const reduce = useReducedMotion();
@@ -182,12 +177,7 @@ function DiagramNode({
       >
         {label}
       </text>
-      <text
-        x={x + 16}
-        y={y + 41}
-        fontSize="10.5"
-        fill="var(--muted-foreground)"
-      >
+      <text x={x + 16} y={y + 41} fontSize="10.5" fill="var(--muted-foreground)">
         {sub}
       </text>
     </motion.g>

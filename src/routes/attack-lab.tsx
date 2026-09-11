@@ -58,8 +58,8 @@ function AttackLabPage() {
         description="Compose adversarial prompts by category and follow them through each stage of the evaluation path."
         aside={
           <PrototypeNotice>
-            Prototype interface — no attack is executed. Selections and prompt
-            text are not sent anywhere.
+            Prototype interface — no attack is executed. Selections and prompt text are not sent
+            anywhere.
           </PrototypeNotice>
         }
       />
@@ -75,11 +75,7 @@ function AttackLabPage() {
                     type="button"
                     aria-pressed={i === 0}
                     className="flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left transition-colors hover:bg-surface-alt"
-                    style={
-                      i === 0
-                        ? { backgroundColor: "var(--surface-alt)" }
-                        : undefined
-                    }
+                    style={i === 0 ? { backgroundColor: "var(--surface-alt)" } : undefined}
                   >
                     <span className="label-mono w-10 shrink-0">{cat.id}</span>
                     <span className="min-w-0 flex-1 truncate font-display text-[13.5px] font-medium text-foreground">
@@ -117,11 +113,7 @@ function AttackLabPage() {
                     id="attack-config"
                     label="Configuration"
                     value="C0 — Basic RAG"
-                    options={[
-                      "C0 — Basic RAG",
-                      "C1 — Hardened RAG",
-                      "C2 — Layered DeepShield",
-                    ]}
+                    options={["C0 — Basic RAG", "C1 — Hardened RAG", "C2 — Layered DeepShield"]}
                   />
                   <StaticSelect
                     id="attack-corpus"
@@ -140,18 +132,13 @@ function AttackLabPage() {
           <Reveal delay={0.14}>
             <Panel>
               <PanelHeader title="Pipeline inspection">
-                <Layers
-                  className="h-4 w-4 text-muted-foreground"
-                  aria-hidden="true"
-                />
+                <Layers className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               </PanelHeader>
               <ol className="grid gap-px bg-border sm:grid-cols-3">
                 {stages.map((stage, i) => (
                   <li key={stage} className="bg-surface p-4">
                     <div className="flex items-center justify-between">
-                      <span className="label-mono">
-                        S{i + 1}
-                      </span>
+                      <span className="label-mono">S{i + 1}</span>
                       <span
                         className="h-[7px] w-[7px] rounded-full border border-[color:var(--line)]"
                         aria-hidden="true"
@@ -160,9 +147,7 @@ function AttackLabPage() {
                     <p className="mt-3 font-display text-[13px] font-medium text-foreground">
                       {stage}
                     </p>
-                    <p className="mt-1 text-[12px] text-muted-foreground">
-                      Awaiting run
-                    </p>
+                    <p className="mt-1 text-[12px] text-muted-foreground">Awaiting run</p>
                   </li>
                 ))}
               </ol>

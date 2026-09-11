@@ -26,9 +26,8 @@ export function Footer() {
             DeepShield-RAG
           </p>
           <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
-            A security evaluation and guardrail benchmarking platform for
-            retrieval-augmented AI assistants, developed as a master&apos;s
-            capstone research project.
+            A security evaluation and guardrail benchmarking platform for retrieval-augmented AI
+            assistants, developed as a master&apos;s capstone research project.
           </p>
         </div>
 
