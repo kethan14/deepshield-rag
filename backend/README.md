@@ -88,6 +88,26 @@ uv run --project backend --no-sync python -m deepshield_api.corpus.cli validate 
 
 Schema drift is checked automatically by Backend CI.
 
+## Collect an approved source
+
+The collector only accepts a source that already exists as a validated `planned`
+manifest record. It enforces the approved publisher domain, HTTPS redirects, declared
+media type, a bounded response size, deterministic raw paths, SHA-256 checksums, and
+immutable raw files. The command always writes a new manifest version rather than
+overwriting its input.
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli collect `
+  data/manifests/f1-policy-v1.planned.json `
+  approved-source-id `
+  --document-version 1 `
+  --output data/manifests/f1-policy-v2.collected.json `
+  --repository-root .
+```
+
+Do not run collection until the authoritative source registry has been reviewed and
+frozen. Raw artifacts remain under ignored `data/raw/` paths and must not be committed.
+
 ## Project structure
 
 ```text
@@ -101,9 +121,11 @@ backend/
 │       └── corpus/
 │           ├── __init__.py
 │           ├── cli.py
+│           ├── collection.py
 │           ├── manifest.py
 │           └── models.py
 └── tests/
+    ├── test_corpus_collection.py
     ├── test_corpus_manifest.py
     ├── test_corpus_models.py
     └── test_health.py

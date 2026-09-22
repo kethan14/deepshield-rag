@@ -5,10 +5,22 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from deepshield_api.corpus.collection import (
+    DEFAULT_MAX_BYTES,
+    DEFAULT_TIMEOUT_SECONDS,
+    Clock,
+    CollectionError,
+    CollectionPolicy,
+    SourceFetcher,
+    collect_manifest_source,
+    download_source,
+    utc_now,
+)
 from deepshield_api.corpus.manifest import (
     ManifestError,
     load_source_manifest,
     render_source_manifest_schema,
+    write_source_manifest,
     write_source_manifest_schema,
 )
 
@@ -31,10 +43,27 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate_parser = subparsers.add_parser("validate", help="Validate a source manifest.")
     validate_parser.add_argument("manifest", type=Path)
+
+    collect_parser = subparsers.add_parser(
+        "collect",
+        help="Collect one approved manifest source into an immutable raw artifact.",
+    )
+    collect_parser.add_argument("manifest", type=Path)
+    collect_parser.add_argument("source_id")
+    collect_parser.add_argument("--document-version", type=int, required=True)
+    collect_parser.add_argument("--output", type=Path, required=True)
+    collect_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    collect_parser.add_argument("--max-bytes", type=int, default=DEFAULT_MAX_BYTES)
+    collect_parser.add_argument("--timeout-seconds", type=float, default=DEFAULT_TIMEOUT_SECONDS)
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    fetcher: SourceFetcher = download_source,
+    clock: Clock = utc_now,
+) -> int:
     """Run a corpus manifest command."""
 
     args = build_parser().parse_args(argv)
@@ -59,6 +88,36 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ManifestError as exc:
         print(str(exc), file=sys.stderr)
         return 1
+
+    if args.command == "collect":
+        output_path = Path(args.output)
+        if output_path.resolve() == manifest_path.resolve():
+            print("collection output must differ from the input manifest", file=sys.stderr)
+            return 1
+        try:
+            policy = CollectionPolicy(
+                max_bytes=args.max_bytes,
+                timeout_seconds=args.timeout_seconds,
+            )
+            collected_manifest = collect_manifest_source(
+                manifest,
+                args.source_id,
+                args.document_version,
+                Path(args.repository_root),
+                policy=policy,
+                fetcher=fetcher,
+                clock=clock,
+            )
+            write_source_manifest(output_path, collected_manifest)
+        except (CollectionError, ManifestError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        print(
+            f"Collected {args.source_id} v{args.document_version}; "
+            f"wrote manifest version {collected_manifest.manifest_version}: {output_path}"
+        )
+        return 0
 
     print(
         f"Validated manifest version {manifest.manifest_version} "
