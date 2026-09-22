@@ -1,0 +1,240 @@
+{
+  "$defs": {
+    "CollectionStatus": {
+      "description": "Lifecycle states permitted in a source manifest.",
+      "enum": [
+        "planned",
+        "collected"
+      ],
+      "title": "CollectionStatus",
+      "type": "string"
+    },
+    "SourceDocumentType": {
+      "description": "Semantic document categories used during collection and evaluation.",
+      "enum": [
+        "guidance-page",
+        "regulation",
+        "form-instructions",
+        "policy-manual",
+        "pdf-guide"
+      ],
+      "title": "SourceDocumentType",
+      "type": "string"
+    },
+    "SourceMediaType": {
+      "description": "Supported source-file media types.",
+      "enum": [
+        "text/html",
+        "application/pdf",
+        "text/plain"
+      ],
+      "title": "SourceMediaType",
+      "type": "string"
+    },
+    "SourcePublisher": {
+      "description": "Approved publishers for the primary F-1 policy corpus.",
+      "enum": [
+        "uscis",
+        "dhs",
+        "ice-sevp",
+        "study-in-the-states",
+        "ecfr",
+        "department-of-state",
+        "cbp"
+      ],
+      "title": "SourcePublisher",
+      "type": "string"
+    },
+    "SourceRecord": {
+      "additionalProperties": false,
+      "description": "Metadata for one immutable version of an authoritative source.",
+      "properties": {
+        "canonical_url": {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "title": "Canonical Url",
+          "type": "string"
+        },
+        "collection_status": {
+          "$ref": "#/$defs/CollectionStatus",
+          "default": "planned"
+        },
+        "document_type": {
+          "$ref": "#/$defs/SourceDocumentType"
+        },
+        "document_version": {
+          "minimum": 1,
+          "title": "Document Version",
+          "type": "integer"
+        },
+        "language": {
+          "const": "en",
+          "default": "en",
+          "title": "Language",
+          "type": "string"
+        },
+        "last_updated_on": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Updated On"
+        },
+        "media_type": {
+          "$ref": "#/$defs/SourceMediaType"
+        },
+        "published_on": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Published On"
+        },
+        "publisher": {
+          "$ref": "#/$defs/SourcePublisher"
+        },
+        "raw_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Path"
+        },
+        "retrieved_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieved At"
+        },
+        "rights_notes": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Rights Notes",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "scope_tags": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Scope Tags",
+          "type": "array"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "source_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "document_version",
+        "title",
+        "publisher",
+        "canonical_url",
+        "document_type",
+        "media_type",
+        "scope_tags",
+        "rights_notes"
+      ],
+      "title": "SourceRecord",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Versioned collection of authoritative corpus source records.",
+  "properties": {
+    "corpus_id": {
+      "const": "deepshield-rag-f1-policy",
+      "default": "deepshield-rag-f1-policy",
+      "title": "Corpus Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "manifest_version": {
+      "minimum": 1,
+      "title": "Manifest Version",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/SourceRecord"
+      },
+      "minItems": 1,
+      "title": "Sources",
+      "type": "array"
+    }
+  },
+  "required": [
+    "manifest_version",
+    "created_at",
+    "sources"
+  ],
+  "title": "SourceManifest",
+  "type": "object"
+}

@@ -57,6 +57,11 @@ jobs:
       - name: Run mypy
         run: uv run --no-sync mypy src tests
 
+      - name: Confirm corpus schema is current
+        run: >-
+          uv run --no-sync python -m deepshield_api.corpus.cli schema --check
+          --output ../data/manifests/source-manifest.schema.json
+
       - name: Run tests with coverage
         run: uv run --no-sync pytest --cov=deepshield_api --cov-report=term-missing
 

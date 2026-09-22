@@ -66,6 +66,28 @@ uv run --project backend --no-sync pytest backend --cov=deepshield_api --cov-rep
 
 The configured minimum backend coverage is 80%.
 
+## Validate corpus metadata
+
+Export the deterministic source-manifest JSON Schema:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli schema
+```
+
+Confirm that the committed schema matches the current Pydantic models:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli schema --check
+```
+
+Validate a source manifest or synthetic fixture:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli validate data/fixtures/source-manifest.valid.json
+```
+
+Schema drift is checked automatically by Backend CI.
+
 ## Project structure
 
 ```text
@@ -75,8 +97,15 @@ backend/
 ├── src/
 │   └── deepshield_api/
 │       ├── __init__.py
-│       └── main.py
+│       ├── main.py
+│       └── corpus/
+│           ├── __init__.py
+│           ├── cli.py
+│           ├── manifest.py
+│           └── models.py
 └── tests/
+    ├── test_corpus_manifest.py
+    ├── test_corpus_models.py
     └── test_health.py
 ```
 
