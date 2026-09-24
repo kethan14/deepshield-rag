@@ -18,6 +18,7 @@ from deepshield_api.corpus.models import SourceRecord
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 VALID_FIXTURE = REPOSITORY_ROOT / "data" / "fixtures" / "source-manifest.valid.json"
+F1_SOURCE_MANIFEST = REPOSITORY_ROOT / "data" / "manifests" / "f1-policy-source-manifest.v1.json"
 
 
 def test_committed_synthetic_fixture_is_valid() -> None:
@@ -25,6 +26,40 @@ def test_committed_synthetic_fixture_is_valid() -> None:
 
     assert manifest.manifest_version == 1
     assert len(manifest.sources) == 1
+
+
+def test_committed_f1_source_registry_is_valid_and_planned() -> None:
+    manifest = load_source_manifest(F1_SOURCE_MANIFEST)
+
+    assert manifest.manifest_version == 1
+    assert len(manifest.sources) == 17
+    assert all(source.collection_status.value == "planned" for source in manifest.sources)
+    assert all(source.retrieved_at is None for source in manifest.sources)
+    assert all(source.raw_path is None for source in manifest.sources)
+    assert all(source.sha256 is None for source in manifest.sources)
+
+    publishers = {source.publisher.value for source in manifest.sources}
+    assert publishers == {
+        "department-of-state",
+        "ecfr",
+        "ice-sevp",
+        "study-in-the-states",
+        "uscis",
+    }
+
+    covered_topics = {tag for source in manifest.sources for tag in source.scope_tags}
+    assert {
+        "cpt",
+        "employment",
+        "full-course-of-study",
+        "maintaining-status",
+        "opt",
+        "reinstatement",
+        "stem-opt",
+        "transfer",
+        "travel",
+        "visa-application",
+    } <= covered_topics
 
 
 def test_load_manifest_rejects_missing_file(tmp_path: Path) -> None:
