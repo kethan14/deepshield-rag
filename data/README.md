@@ -146,3 +146,13 @@ uv run --project backend --no-sync python -m deepshield_api.corpus.cli validate 
 
 The fixture demonstrates the file format only. Its synthetic URL is not an approved
 corpus source and must never be used as factual policy evidence.
+
+Validate the frozen version 1 F-1 source registry:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli validate data/manifests/f1-policy-source-manifest.v1.json
+```
+
+The version 1 registry contains planned metadata only. It does not prove that a document has
+been downloaded or reviewed, and it must not be treated as a collected corpus manifest until
+each record has retrieval metadata, a raw path, and a SHA-256 checksum.
