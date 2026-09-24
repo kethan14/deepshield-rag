@@ -1,15 +1,20 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
 import pytest
 
 from deepshield_api.corpus.cli import main
+from deepshield_api.corpus.collection import CollectionPolicy, FetchedDocument
 from deepshield_api.corpus.manifest import (
     ManifestError,
     load_source_manifest,
+    render_source_manifest,
     render_source_manifest_schema,
+    write_source_manifest,
     write_source_manifest_schema,
 )
+from deepshield_api.corpus.models import SourceRecord
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 VALID_FIXTURE = REPOSITORY_ROOT / "data" / "fixtures" / "source-manifest.valid.json"
@@ -60,6 +65,80 @@ def test_schema_write_creates_parent_directory(tmp_path: Path) -> None:
     write_source_manifest_schema(schema_path)
 
     assert schema_path.read_text(encoding="utf-8") == render_source_manifest_schema()
+
+
+def test_manifest_render_and_write_are_deterministic(tmp_path: Path) -> None:
+    manifest = load_source_manifest(VALID_FIXTURE)
+    manifest_path = tmp_path / "nested" / "manifest.json"
+
+    first_render = render_source_manifest(manifest)
+    second_render = render_source_manifest(manifest)
+    write_source_manifest(manifest_path, manifest)
+
+    assert first_render == second_render
+    assert first_render.endswith("\n")
+    assert manifest_path.read_text(encoding="utf-8") == first_render
+
+    with pytest.raises(ManifestError, match="refusing to replace"):
+        write_source_manifest(manifest_path, manifest)
+
+
+def test_collect_cli_writes_new_manifest_and_raw_artifact(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    output_path = tmp_path / "collected-manifest.json"
+
+    def fetcher(source: SourceRecord, policy: CollectionPolicy) -> FetchedDocument:
+        return FetchedDocument(
+            final_url="https://www.uscis.gov/synthetic-test-fixture",
+            media_type="text/html",
+            content=b"<html>Synthetic fixture</html>",
+        )
+
+    assert (
+        main(
+            [
+                "collect",
+                str(VALID_FIXTURE),
+                "synthetic-uscis-guidance",
+                "--document-version",
+                "1",
+                "--output",
+                str(output_path),
+                "--repository-root",
+                str(tmp_path),
+            ],
+            fetcher=fetcher,
+            clock=lambda: datetime.fromisoformat("2026-09-22T12:00:00+00:00"),
+        )
+        == 0
+    )
+    output = capsys.readouterr().out
+    collected = load_source_manifest(output_path)
+
+    assert "wrote manifest version 2" in output
+    assert collected.sources[0].collection_status.value == "collected"
+    assert collected.sources[0].raw_path is not None
+    assert (tmp_path / Path(collected.sources[0].raw_path)).is_file()
+
+
+def test_collect_cli_rejects_in_place_output(capsys: pytest.CaptureFixture[str]) -> None:
+    assert (
+        main(
+            [
+                "collect",
+                str(VALID_FIXTURE),
+                "synthetic-uscis-guidance",
+                "--document-version",
+                "1",
+                "--output",
+                str(VALID_FIXTURE),
+            ]
+        )
+        == 1
+    )
+    assert "must differ" in capsys.readouterr().err
 
 
 def test_schema_cli_writes_and_checks_schema(

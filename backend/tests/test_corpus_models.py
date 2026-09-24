@@ -69,6 +69,8 @@ def test_collected_source_requires_complete_artifacts() -> None:
     ("canonical_url", "message"),
     [
         ("http://www.uscis.gov/example", "must use HTTPS"),
+        ("https://user:secret@www.uscis.gov/example", "must not contain credentials"),
+        ("https://www.uscis.gov:8443/example", "standard HTTPS port"),
         ("https://www.uscis.gov/example#section", "must not contain a URL fragment"),
         ("https://uscis.gov.example.com/example", "host is not approved"),
     ],

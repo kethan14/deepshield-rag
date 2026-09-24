@@ -104,6 +104,10 @@ class SourceRecord(BaseModel):
 
         if value.scheme != "https":
             raise ValueError("canonical_url must use HTTPS")
+        if value.username is not None or value.password is not None:
+            raise ValueError("canonical_url must not contain credentials")
+        if value.port != 443:
+            raise ValueError("canonical_url must use the standard HTTPS port")
         if value.fragment is not None:
             raise ValueError("canonical_url must not contain a URL fragment")
 

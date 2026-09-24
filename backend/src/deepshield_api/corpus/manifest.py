@@ -40,8 +40,23 @@ def render_source_manifest_schema() -> str:
     return json.dumps(SourceManifest.model_json_schema(), indent=2, sort_keys=True) + "\n"
 
 
+def render_source_manifest(manifest: SourceManifest) -> str:
+    """Return a canonical deterministic source-manifest document."""
+
+    return json.dumps(manifest.model_dump(mode="json"), indent=2, sort_keys=True) + "\n"
+
+
 def write_source_manifest_schema(path: Path) -> None:
     """Write the canonical JSON Schema, creating its parent directory."""
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(render_source_manifest_schema(), encoding="utf-8", newline="\n")
+
+
+def write_source_manifest(path: Path, manifest: SourceManifest) -> None:
+    """Write a new manifest without replacing an existing version."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        raise ManifestError(f"refusing to replace an existing source manifest: {path}")
+    path.write_text(render_source_manifest(manifest), encoding="utf-8", newline="\n")

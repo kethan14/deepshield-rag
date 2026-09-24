@@ -116,6 +116,11 @@ If automated collection is not permitted or is unreliable for a source, the docu
 will be downloaded manually and registered through the same validation process.
 Website access rules, terms, and redistribution restrictions must be respected.
 
+The automated collector refuses unapproved redirect domains, non-HTTPS final URLs,
+unexpected media types, empty responses, oversized responses, and attempts to replace
+an existing raw artifact with different bytes. It writes a new manifest version and
+never overwrites the approved input manifest.
+
 ## Manifest validation
 
 `manifests/source-manifest.schema.json` is generated deterministically from the
