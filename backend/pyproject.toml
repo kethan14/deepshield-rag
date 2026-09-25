@@ -9,7 +9,9 @@ description = "Backend API for the DeepShield-RAG security evaluation platform."
 authors = [{ name = "Kethan Kanithi" }]
 requires-python = ">=3.11,<3.12"
 dependencies = [
+  "beautifulsoup4==4.14.2",
   "fastapi==0.141.1",
+  "pypdf==6.5.0",
   "pydantic==2.13.5",
   "pydantic-settings==2.15.0",
   "uvicorn[standard]==0.52.4",
