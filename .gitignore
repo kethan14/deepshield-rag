@@ -55,3 +55,4 @@ htmlcov/
 /data/interim/
 /data/processed/
 /data/indexes/
+/data/incoming/

@@ -19,6 +19,9 @@ from deepshield_api.corpus.models import SourceRecord
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 VALID_FIXTURE = REPOSITORY_ROOT / "data" / "fixtures" / "source-manifest.valid.json"
 F1_SOURCE_MANIFEST = REPOSITORY_ROOT / "data" / "manifests" / "f1-policy-source-manifest.v1.json"
+F1_COLLECTED_MANIFEST = (
+    REPOSITORY_ROOT / "data" / "manifests" / "f1-policy-collected-manifest.v18.json"
+)
 
 
 def test_committed_synthetic_fixture_is_valid() -> None:
@@ -60,6 +63,20 @@ def test_committed_f1_source_registry_is_valid_and_planned() -> None:
         "travel",
         "visa-application",
     } <= covered_topics
+
+
+def test_committed_f1_collected_manifest_has_complete_provenance() -> None:
+    manifest = load_source_manifest(F1_COLLECTED_MANIFEST)
+
+    assert manifest.manifest_version == 18
+    assert len(manifest.sources) == 17
+    assert all(source.collection_status.value == "collected" for source in manifest.sources)
+    assert all(source.retrieved_at is not None for source in manifest.sources)
+    assert all(source.raw_path is not None for source in manifest.sources)
+    assert all(source.sha256 is not None for source in manifest.sources)
+    assert {source.source_id for source in manifest.sources} == {
+        source.source_id for source in load_source_manifest(F1_SOURCE_MANIFEST).sources
+    }
 
 
 def test_load_manifest_rejects_missing_file(tmp_path: Path) -> None:
@@ -174,6 +191,40 @@ def test_collect_cli_rejects_in_place_output(capsys: pytest.CaptureFixture[str])
         == 1
     )
     assert "must differ" in capsys.readouterr().err
+
+
+def test_import_file_cli_registers_browser_download(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_path = tmp_path / "browser-download.html"
+    input_path.write_text("<html>Synthetic fixture</html>", encoding="utf-8")
+    output_path = tmp_path / "imported-manifest.json"
+
+    assert (
+        main(
+            [
+                "import-file",
+                str(VALID_FIXTURE),
+                "synthetic-uscis-guidance",
+                "--document-version",
+                "1",
+                "--input",
+                str(input_path),
+                "--output",
+                str(output_path),
+                "--repository-root",
+                str(tmp_path),
+            ],
+            clock=lambda: datetime.fromisoformat("2026-09-22T12:00:00+00:00"),
+        )
+        == 0
+    )
+
+    output = capsys.readouterr().out
+    imported = load_source_manifest(output_path)
+    assert "Registered synthetic-uscis-guidance" in output
+    assert imported.sources[0].collection_status.value == "collected"
 
 
 def test_schema_cli_writes_and_checks_schema(
