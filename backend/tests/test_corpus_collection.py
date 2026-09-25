@@ -19,6 +19,8 @@ from deepshield_api.corpus.collection import (
     collect_manifest_source,
     collect_source,
     download_source,
+    import_manifest_source_file,
+    import_source_file,
 )
 from deepshield_api.corpus.models import SourceManifest, SourceRecord
 
@@ -73,6 +75,13 @@ def test_collection_policy_rejects_invalid_values() -> None:
         CollectionPolicy(timeout_seconds=0)
     with pytest.raises(ValueError, match="user_agent"):
         CollectionPolicy(user_agent="  ")
+
+
+def test_default_collection_user_agent_is_browser_compatible_and_identifiable() -> None:
+    user_agent = CollectionPolicy().user_agent
+
+    assert user_agent.startswith("Mozilla/5.0")
+    assert "DeepShield-RAG/0.1" in user_agent
 
 
 def test_collect_source_writes_deterministic_immutable_artifact(tmp_path: Path) -> None:
@@ -173,6 +182,87 @@ def test_collect_source_rejects_oversized_response(tmp_path: Path) -> None:
             fetcher=fetcher,
             clock=fixed_clock,
         )
+
+
+def test_import_source_file_validates_and_stores_browser_download(tmp_path: Path) -> None:
+    input_path = tmp_path / "download.html"
+    input_path.write_bytes(CONTENT)
+
+    collected = import_source_file(
+        planned_source(),
+        input_path,
+        tmp_path,
+        clock=fixed_clock,
+    )
+
+    assert collected.raw_path is not None
+    assert (tmp_path / Path(collected.raw_path)).read_bytes() == CONTENT
+    assert collected.sha256 == hashlib.sha256(CONTENT).hexdigest()
+
+
+def test_import_source_file_accepts_browser_preamble_before_html(tmp_path: Path) -> None:
+    input_path = tmp_path / "browser-download.html"
+    content = b"\n<!-- browser preamble --><script></script><!DOCTYPE html><html></html>"
+    input_path.write_bytes(content)
+
+    collected = import_source_file(
+        planned_source(),
+        input_path,
+        tmp_path,
+        clock=fixed_clock,
+    )
+
+    assert collected.raw_path is not None
+    assert (tmp_path / Path(collected.raw_path)).read_bytes() == content
+
+
+@pytest.mark.parametrize(
+    ("source", "content", "message"),
+    [
+        (planned_source(), b"not html", "HTML document signature"),
+        (
+            planned_source(media_type="application/pdf"),
+            b"not pdf",
+            "PDF file signature",
+        ),
+        (planned_source(), b"\xff\xfe", "valid UTF-8"),
+    ],
+)
+def test_import_source_file_rejects_invalid_signature(
+    tmp_path: Path,
+    source: SourceRecord,
+    content: bytes,
+    message: str,
+) -> None:
+    input_path = tmp_path / "invalid.bin"
+    input_path.write_bytes(content)
+
+    with pytest.raises(CollectionError, match=message):
+        import_source_file(source, input_path, tmp_path, clock=fixed_clock)
+
+
+def test_import_manifest_source_file_versions_manifest(tmp_path: Path) -> None:
+    manifest = SourceManifest.model_validate(
+        {
+            "manifest_version": 4,
+            "created_at": "2026-09-21T12:00:00Z",
+            "sources": [source_data()],
+        }
+    )
+    input_path = tmp_path / "download.html"
+    input_path.write_bytes(CONTENT)
+
+    collected = import_manifest_source_file(
+        manifest,
+        "synthetic-uscis-guidance",
+        1,
+        input_path,
+        tmp_path,
+        clock=fixed_clock,
+    )
+
+    assert collected.manifest_version == 5
+    assert collected.sources[0].collection_status.value == "collected"
 
 
 def test_collect_source_rejects_collected_record_and_naive_clock(tmp_path: Path) -> None:

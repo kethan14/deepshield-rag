@@ -14,6 +14,7 @@ from deepshield_api.corpus.collection import (
     SourceFetcher,
     collect_manifest_source,
     download_source,
+    import_manifest_source_file,
     utc_now,
 )
 from deepshield_api.corpus.manifest import (
@@ -55,6 +56,18 @@ def build_parser() -> argparse.ArgumentParser:
     collect_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
     collect_parser.add_argument("--max-bytes", type=int, default=DEFAULT_MAX_BYTES)
     collect_parser.add_argument("--timeout-seconds", type=float, default=DEFAULT_TIMEOUT_SECONDS)
+
+    import_parser = subparsers.add_parser(
+        "import-file",
+        help="Validate and register a browser-downloaded source file.",
+    )
+    import_parser.add_argument("manifest", type=Path)
+    import_parser.add_argument("source_id")
+    import_parser.add_argument("--document-version", type=int, required=True)
+    import_parser.add_argument("--input", type=Path, required=True)
+    import_parser.add_argument("--output", type=Path, required=True)
+    import_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    import_parser.add_argument("--max-bytes", type=int, default=DEFAULT_MAX_BYTES)
     return parser
 
 
@@ -89,32 +102,44 @@ def main(
         print(str(exc), file=sys.stderr)
         return 1
 
-    if args.command == "collect":
+    if args.command in {"collect", "import-file"}:
         output_path = Path(args.output)
         if output_path.resolve() == manifest_path.resolve():
             print("collection output must differ from the input manifest", file=sys.stderr)
             return 1
         try:
-            policy = CollectionPolicy(
-                max_bytes=args.max_bytes,
-                timeout_seconds=args.timeout_seconds,
-            )
-            collected_manifest = collect_manifest_source(
-                manifest,
-                args.source_id,
-                args.document_version,
-                Path(args.repository_root),
-                policy=policy,
-                fetcher=fetcher,
-                clock=clock,
-            )
+            if args.command == "collect":
+                policy = CollectionPolicy(
+                    max_bytes=args.max_bytes,
+                    timeout_seconds=args.timeout_seconds,
+                )
+                collected_manifest = collect_manifest_source(
+                    manifest,
+                    args.source_id,
+                    args.document_version,
+                    Path(args.repository_root),
+                    policy=policy,
+                    fetcher=fetcher,
+                    clock=clock,
+                )
+            else:
+                policy = CollectionPolicy(max_bytes=args.max_bytes)
+                collected_manifest = import_manifest_source_file(
+                    manifest,
+                    args.source_id,
+                    args.document_version,
+                    Path(args.input),
+                    Path(args.repository_root),
+                    policy=policy,
+                    clock=clock,
+                )
             write_source_manifest(output_path, collected_manifest)
         except (CollectionError, ManifestError, ValueError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
         print(
-            f"Collected {args.source_id} v{args.document_version}; "
+            f"Registered {args.source_id} v{args.document_version}; "
             f"wrote manifest version {collected_manifest.manifest_version}: {output_path}"
         )
         return 0

@@ -15,6 +15,7 @@ data/
 ├── manifests/   # Source schema and later approved collection metadata
 ├── fixtures/    # Small, explicitly synthetic records used by automated tests
 ├── evaluation/  # Version-controlled benchmark prompts and reviewed labels
+├── incoming/    # Temporary browser downloads; generated locally
 ├── raw/         # Downloaded source files; generated locally
 ├── interim/     # Extracted and normalized text; generated locally
 ├── processed/   # Final chunks and metadata; generated locally
@@ -120,6 +121,19 @@ The automated collector refuses unapproved redirect domains, non-HTTPS final URL
 unexpected media types, empty responses, oversized responses, and attempts to replace
 an existing raw artifact with different bytes. It writes a new manifest version and
 never overwrites the approved input manifest.
+
+When an approved government site blocks scripted collection, save its public document
+through a normal browser into `data/incoming/`, then register it with `import-file`.
+The importer rejects symbolic links, oversized files, empty files, invalid UTF-8 HTML,
+and bytes that do not match the declared HTML or PDF type. It applies the same immutable
+raw-path, checksum, timestamp, and new-manifest rules as automated collection.
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli import-file `
+  data/manifests/input-manifest.json source-id --document-version 1 `
+  --input data/incoming/source.html --output data/manifests/output-manifest.json `
+  --repository-root .
+```
 
 ## Manifest validation
 

@@ -23,7 +23,7 @@ from deepshield_api.corpus.models import (
 DEFAULT_MAX_BYTES = 10 * 1024 * 1024
 DEFAULT_TIMEOUT_SECONDS = 30.0
 READ_CHUNK_BYTES = 64 * 1024
-DEFAULT_USER_AGENT = "DeepShield-RAG/0.1 academic corpus collector"
+DEFAULT_USER_AGENT = "Mozilla/5.0 (compatible; DeepShield-RAG/0.1; academic corpus research)"
 
 
 class CollectionError(RuntimeError):
@@ -153,7 +153,68 @@ def collect_source(
 
     effective_policy = policy or CollectionPolicy()
     fetched = fetcher(source, effective_policy)
-    _validate_fetched_document(source, fetched, effective_policy)
+    return _store_fetched_source(
+        source,
+        fetched,
+        repository_root,
+        policy=effective_policy,
+        clock=clock,
+    )
+
+
+def import_source_file(
+    source: SourceRecord,
+    input_path: Path,
+    repository_root: Path,
+    *,
+    policy: CollectionPolicy | None = None,
+    clock: Clock = utc_now,
+) -> SourceRecord:
+    """Validate a browser-downloaded file and store it as an immutable raw artifact."""
+
+    if source.collection_status is not CollectionStatus.PLANNED:
+        raise CollectionError("only planned sources can be collected")
+    if input_path.is_symlink() or not input_path.is_file():
+        raise CollectionError("import input must be a regular non-symbolic-link file")
+
+    effective_policy = policy or CollectionPolicy()
+    try:
+        declared_size = input_path.stat().st_size
+    except OSError as exc:
+        raise CollectionError("unable to inspect import input") from exc
+    if declared_size > effective_policy.max_bytes:
+        raise CollectionError(f"import input exceeds the {effective_policy.max_bytes}-byte limit")
+    try:
+        content = input_path.read_bytes()
+    except OSError as exc:
+        raise CollectionError("unable to read import input") from exc
+
+    _validate_import_signature(source, content)
+    fetched = FetchedDocument(
+        final_url=str(source.canonical_url),
+        media_type=source.media_type.value,
+        content=content,
+    )
+    return _store_fetched_source(
+        source,
+        fetched,
+        repository_root,
+        policy=effective_policy,
+        clock=clock,
+    )
+
+
+def _store_fetched_source(
+    source: SourceRecord,
+    fetched: FetchedDocument,
+    repository_root: Path,
+    *,
+    policy: CollectionPolicy,
+    clock: Clock,
+) -> SourceRecord:
+    """Validate fetched bytes and persist one collected source record."""
+
+    _validate_fetched_document(source, fetched, policy)
 
     retrieved_at = clock()
     if retrieved_at.utcoffset() is None:
@@ -219,6 +280,49 @@ def collect_manifest_source(
     return SourceManifest.model_validate(payload)
 
 
+def import_manifest_source_file(
+    manifest: SourceManifest,
+    source_id: str,
+    document_version: int,
+    input_path: Path,
+    repository_root: Path,
+    *,
+    policy: CollectionPolicy | None = None,
+    clock: Clock = utc_now,
+) -> SourceManifest:
+    """Import one browser-downloaded source and produce the next manifest version."""
+
+    matches = [
+        (index, source)
+        for index, source in enumerate(manifest.sources)
+        if source.source_id == source_id and source.document_version == document_version
+    ]
+    if not matches:
+        raise CollectionError(f"manifest source not found: {source_id} v{document_version}")
+
+    index, source = matches[0]
+    collected_at = clock()
+    collected = import_source_file(
+        source,
+        input_path,
+        repository_root,
+        policy=policy,
+        clock=lambda: collected_at,
+    )
+
+    sources = [item.model_dump(mode="json") for item in manifest.sources]
+    sources[index] = collected.model_dump(mode="json")
+    payload = manifest.model_dump(mode="json")
+    payload.update(
+        {
+            "manifest_version": manifest.manifest_version + 1,
+            "created_at": collected_at,
+            "sources": sources,
+        }
+    )
+    return SourceManifest.model_validate(payload)
+
+
 def build_raw_path(source: SourceRecord) -> PurePosixPath:
     """Build the deterministic repository-relative path for a raw artifact."""
 
@@ -266,6 +370,26 @@ def _validate_fetched_document(
         )
 
     _validate_source_url(source, fetched.final_url)
+
+
+def _validate_import_signature(source: SourceRecord, content: bytes) -> None:
+    """Reject local files whose bytes do not match the declared media type."""
+
+    if not content:
+        raise CollectionError("import input is empty")
+    if source.media_type is SourceMediaType.PDF:
+        if not content.startswith(b"%PDF-"):
+            raise CollectionError("import input does not have a PDF file signature")
+        return
+
+    try:
+        decoded = content.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise CollectionError("import input is not valid UTF-8 text") from exc
+    if source.media_type is SourceMediaType.HTML:
+        signature_window = decoded[:4096].lower()
+        if "<!doctype html" not in signature_window and "<html" not in signature_window:
+            raise CollectionError("import input does not have an HTML document signature")
 
 
 def _validate_source_url(source: SourceRecord, url: str) -> None:
