@@ -135,6 +135,26 @@ uv run --project backend --no-sync python -m deepshield_api.corpus.cli import-fi
   --repository-root .
 ```
 
+## Text extraction and normalization
+
+The extraction command accepts only a fully collected manifest. Before reading a raw
+artifact, it verifies that the file remains inside `data/raw/` and that its SHA-256
+checksum matches the collected manifest. HTML extraction removes scripts, styles,
+navigation, forms, and other non-content elements before selecting the primary page
+content. PDF extraction processes every unencrypted page. Both paths apply deterministic
+Unicode and whitespace normalization.
+
+Normalized UTF-8 text is written immutably under `data/interim/`. A versioned extraction
+report records every input and output checksum, extraction method, path, character count,
+and line count without committing the extracted document text itself.
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli extract `
+  data/manifests/f1-policy-collected-manifest.v18.json `
+  --output data/manifests/f1-policy-extraction-report.v1.json `
+  --report-version 1 --repository-root .
+```
+
 ## Manifest validation
 
 `manifests/source-manifest.schema.json` is generated deterministically from the

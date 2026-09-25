@@ -108,6 +108,22 @@ uv run --project backend --no-sync python -m deepshield_api.corpus.cli collect `
 Do not run collection until the authoritative source registry has been reviewed and
 frozen. Raw artifacts remain under ignored `data/raw/` paths and must not be committed.
 
+## Extract normalized corpus text
+
+After all source records are collected, verify their checksums and extract deterministic
+normalized text with:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli extract `
+  data/manifests/f1-policy-collected-manifest.v18.json `
+  --output data/manifests/f1-policy-extraction-report.v1.json `
+  --report-version 1 --repository-root .
+```
+
+The generated report stores input/output checksums and measurable extraction statistics.
+The normalized text remains in the ignored `data/interim/` directory and can be rebuilt
+from the immutable raw artifacts and committed report configuration.
+
 ## Project structure
 
 ```text
@@ -122,10 +138,12 @@ backend/
 │           ├── __init__.py
 │           ├── cli.py
 │           ├── collection.py
+│           ├── extraction.py
 │           ├── manifest.py
 │           └── models.py
 └── tests/
     ├── test_corpus_collection.py
+    ├── test_corpus_extraction.py
     ├── test_corpus_manifest.py
     ├── test_corpus_models.py
     └── test_health.py

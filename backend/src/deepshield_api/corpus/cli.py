@@ -17,6 +17,13 @@ from deepshield_api.corpus.collection import (
     import_manifest_source_file,
     utc_now,
 )
+from deepshield_api.corpus.extraction import (
+    DEFAULT_MIN_CHARACTERS,
+    ExtractionError,
+    ExtractionPolicy,
+    extract_manifest,
+    write_extraction_report,
+)
 from deepshield_api.corpus.manifest import (
     ManifestError,
     load_source_manifest,
@@ -68,6 +75,20 @@ def build_parser() -> argparse.ArgumentParser:
     import_parser.add_argument("--output", type=Path, required=True)
     import_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
     import_parser.add_argument("--max-bytes", type=int, default=DEFAULT_MAX_BYTES)
+
+    extract_parser = subparsers.add_parser(
+        "extract",
+        help="Verify and extract every collected source into normalized interim text.",
+    )
+    extract_parser.add_argument("manifest", type=Path)
+    extract_parser.add_argument("--output", type=Path, required=True)
+    extract_parser.add_argument("--report-version", type=int, default=1)
+    extract_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    extract_parser.add_argument(
+        "--min-characters",
+        type=int,
+        default=DEFAULT_MIN_CHARACTERS,
+    )
     return parser
 
 
@@ -101,6 +122,28 @@ def main(
     except ManifestError as exc:
         print(str(exc), file=sys.stderr)
         return 1
+
+    if args.command == "extract":
+        output_path = Path(args.output)
+        try:
+            report = extract_manifest(
+                manifest,
+                manifest_path,
+                Path(args.repository_root),
+                report_version=args.report_version,
+                policy=ExtractionPolicy(min_characters=args.min_characters),
+            )
+            write_extraction_report(output_path, report)
+        except (ExtractionError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        characters = sum(record.character_count for record in report.records)
+        print(
+            f"Extracted {len(report.records)} source(s) with {characters} characters; "
+            f"wrote report version {report.report_version}: {output_path}"
+        )
+        return 0
 
     if args.command in {"collect", "import-file"}:
         output_path = Path(args.output)
