@@ -124,6 +124,24 @@ The generated report stores input/output checksums and measurable extraction sta
 The normalized text remains in the ignored `data/interim/` directory and can be rebuilt
 from the immutable raw artifacts and committed report configuration.
 
+## Build deterministic retrieval chunks
+
+After extraction, create the versioned retrieval dataset and its traceability report:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli chunk `
+  data/manifests/f1-policy-extraction-report.v1.json `
+  --output-chunks data/processed/f1-policy-chunks.v1.jsonl `
+  --output-report data/manifests/f1-policy-chunking-report.v1.json `
+  --report-version 1 --repository-root .
+```
+
+The default policy limits chunks to 1,800 characters, targets 250 characters of overlap,
+and prefers line or sentence boundaries. Each JSONL record carries exact offsets,
+checksums, and official-source metadata. The generated text dataset stays ignored under
+`data/processed/`; its committed report records the complete dataset checksum and
+reproducible measurements.
+
 ## Project structure
 
 ```text
@@ -136,6 +154,7 @@ backend/
 │       ├── main.py
 │       └── corpus/
 │           ├── __init__.py
+│           ├── chunking.py
 │           ├── cli.py
 │           ├── collection.py
 │           ├── extraction.py
@@ -143,6 +162,7 @@ backend/
 │           └── models.py
 └── tests/
     ├── test_corpus_collection.py
+    ├── test_corpus_chunking.py
     ├── test_corpus_extraction.py
     ├── test_corpus_manifest.py
     ├── test_corpus_models.py
