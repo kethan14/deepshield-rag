@@ -155,6 +155,34 @@ uv run --project backend --no-sync python -m deepshield_api.corpus.cli extract `
   --report-version 1 --repository-root .
 ```
 
+## Deterministic retrieval chunks
+
+The chunker accepts only a validated extraction report and re-verifies the source
+manifest, extraction-report checksum, normalized-text checksum, UTF-8 encoding, and
+recorded text measurements before processing a document. It creates model-independent
+character chunks with a default maximum of 1,800 characters, a target overlap of 250
+characters, and at least 200 characters of forward progress between chunk starts.
+
+Boundaries prefer normalized line breaks, then sentence endings, then spaces. Every
+chunk records its exact character offsets, text checksum, source identifier, document
+version, official URL, publisher, document type, scope tags, and both upstream content
+checksums. This makes a retrieved passage traceable back through normalized text to the
+frozen raw source.
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli chunk `
+  data/manifests/f1-policy-extraction-report.v1.json `
+  --output-chunks data/processed/f1-policy-chunks.v1.jsonl `
+  --output-report data/manifests/f1-policy-chunking-report.v1.json `
+  --report-version 1 --repository-root .
+```
+
+The JSONL chunk dataset remains in ignored `data/processed/` storage because it is a
+reproducible generated artifact containing source text. The versioned report is committed
+and records the policy, aggregate measurements, per-source measurements, and SHA-256
+checksum of the complete dataset. Existing datasets or reports are never silently
+replaced with different content.
+
 ## Manifest validation
 
 `manifests/source-manifest.schema.json` is generated deterministically from the

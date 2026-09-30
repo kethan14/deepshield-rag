@@ -5,6 +5,16 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from deepshield_api.corpus.chunking import (
+    DEFAULT_MAX_CHARACTERS,
+    DEFAULT_MIN_CHUNK_CHARACTERS,
+    DEFAULT_OVERLAP_CHARACTERS,
+    ChunkingError,
+    ChunkingPolicy,
+    chunk_extraction_report,
+    write_chunk_dataset,
+    write_chunking_report,
+)
 from deepshield_api.corpus.collection import (
     DEFAULT_MAX_BYTES,
     DEFAULT_TIMEOUT_SECONDS,
@@ -89,6 +99,27 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_MIN_CHARACTERS,
     )
+
+    chunk_parser = subparsers.add_parser(
+        "chunk",
+        help="Build deterministic retrieval chunks from a verified extraction report.",
+    )
+    chunk_parser.add_argument("extraction_report", type=Path)
+    chunk_parser.add_argument("--output-chunks", type=Path, required=True)
+    chunk_parser.add_argument("--output-report", type=Path, required=True)
+    chunk_parser.add_argument("--report-version", type=int, default=1)
+    chunk_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    chunk_parser.add_argument("--max-characters", type=int, default=DEFAULT_MAX_CHARACTERS)
+    chunk_parser.add_argument(
+        "--overlap-characters",
+        type=int,
+        default=DEFAULT_OVERLAP_CHARACTERS,
+    )
+    chunk_parser.add_argument(
+        "--min-characters",
+        type=int,
+        default=DEFAULT_MIN_CHUNK_CHARACTERS,
+    )
     return parser
 
 
@@ -114,6 +145,42 @@ def main(
 
         write_source_manifest_schema(output)
         print(f"Wrote schema: {output}")
+        return 0
+
+    if args.command == "chunk":
+        chunks_path = Path(args.output_chunks)
+        report_path = Path(args.output_report)
+        if chunks_path.resolve() == report_path.resolve():
+            print("chunk dataset and report outputs must differ", file=sys.stderr)
+            return 1
+        if report_path.exists():
+            print(
+                f"refusing to replace an existing chunking report: {report_path}", file=sys.stderr
+            )
+            return 1
+        try:
+            chunks, chunking_report = chunk_extraction_report(
+                Path(args.extraction_report),
+                chunks_path,
+                Path(args.repository_root),
+                report_version=args.report_version,
+                policy=ChunkingPolicy(
+                    max_characters=args.max_characters,
+                    overlap_characters=args.overlap_characters,
+                    min_characters=args.min_characters,
+                ),
+            )
+            write_chunk_dataset(chunks_path, chunks)
+            write_chunking_report(report_path, chunking_report)
+        except (ChunkingError, ManifestError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        print(
+            f"Chunked {chunking_report.total_sources} source(s) into "
+            f"{chunking_report.total_chunks} chunks; wrote report version "
+            f"{chunking_report.report_version}: {report_path}"
+        )
         return 0
 
     manifest_path = Path(args.manifest)

@@ -1,5 +1,19 @@
 """Corpus metadata, validation, and controlled collection tools."""
 
+from deepshield_api.corpus.chunking import (
+    ChunkingError,
+    ChunkingPolicy,
+    ChunkingReport,
+    ChunkingSourceSummary,
+    ChunkRecord,
+    chunk_extraction_report,
+    chunk_source_text,
+    load_extraction_report,
+    render_chunk_dataset,
+    render_chunking_report,
+    write_chunk_dataset,
+    write_chunking_report,
+)
 from deepshield_api.corpus.collection import (
     CollectionError,
     CollectionPolicy,
@@ -39,6 +53,11 @@ from deepshield_api.corpus.models import (
 )
 
 __all__ = [
+    "ChunkRecord",
+    "ChunkingError",
+    "ChunkingPolicy",
+    "ChunkingReport",
+    "ChunkingSourceSummary",
     "CollectionStatus",
     "CollectionError",
     "CollectionPolicy",
@@ -55,17 +74,24 @@ __all__ = [
     "SourceRecord",
     "build_raw_path",
     "build_interim_path",
+    "chunk_extraction_report",
+    "chunk_source_text",
     "collect_manifest_source",
     "collect_source",
     "download_source",
     "extract_manifest",
     "extract_source",
     "load_source_manifest",
+    "load_extraction_report",
     "normalize_text",
     "render_extraction_report",
+    "render_chunk_dataset",
+    "render_chunking_report",
     "render_source_manifest",
     "render_source_manifest_schema",
     "write_source_manifest",
     "write_source_manifest_schema",
     "write_extraction_report",
+    "write_chunk_dataset",
+    "write_chunking_report",
 ]

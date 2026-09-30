@@ -1,0 +1,191 @@
+{
+  "chunker_version": "1.0",
+  "chunks_path": "data/processed/f1-policy-chunks.v1.jsonl",
+  "chunks_sha256": "6dcb7c03719437406fca66a215c004583bc223d3d8c5bf5a58e51ad12bc41852",
+  "corpus_id": "deepshield-rag-f1-policy",
+  "extraction_report_path": "data/manifests/f1-policy-extraction-report.v1.json",
+  "extraction_report_sha256": "acb0f593220a4b0dc1822fac2623704cf91f9af8c059849de0ac8bbdca6c1d19",
+  "policy": {
+    "max_characters": 1800,
+    "min_characters": 200,
+    "overlap_characters": 250
+  },
+  "report_version": 1,
+  "schema_version": "1.0",
+  "sources": [
+    {
+      "chunk_character_count": 940525,
+      "chunk_count": 657,
+      "document_version": 1,
+      "extracted_sha256": "d79bc4636ac5cf2485664f24bd7467dd0ad3bc0f4ae07a9bbe11f40f35ae097f",
+      "max_chunk_characters": 1800,
+      "min_chunk_characters": 219,
+      "source_character_count": 724838,
+      "source_id": "ecfr-8-cfr-214-2"
+    },
+    {
+      "chunk_character_count": 45880,
+      "chunk_count": 30,
+      "document_version": 1,
+      "extracted_sha256": "0e5d91472cc36cd0844b2b9298265a04823ef85719172023c6e2bda64313a4e7",
+      "max_chunk_characters": 1790,
+      "min_chunk_characters": 542,
+      "source_character_count": 35368,
+      "source_id": "ecfr-8-cfr-274a-12"
+    },
+    {
+      "chunk_character_count": 26740,
+      "chunk_count": 17,
+      "document_version": 1,
+      "extracted_sha256": "80b7e65702711f861392b7bcb47cd3cdcf856b82b8267d8a017e69e0b4a5fc95",
+      "max_chunk_characters": 1792,
+      "min_chunk_characters": 919,
+      "source_character_count": 21640,
+      "source_id": "uscis-pm-f-chapter-2"
+    },
+    {
+      "chunk_character_count": 37905,
+      "chunk_count": 23,
+      "document_version": 1,
+      "extracted_sha256": "a671f8a2b14f021e4c057bdf0c3869fa7d4a7cef6090e31f104296791b0db84b",
+      "max_chunk_characters": 1790,
+      "min_chunk_characters": 1339,
+      "source_character_count": 30935,
+      "source_id": "uscis-pm-f-chapter-3"
+    },
+    {
+      "chunk_character_count": 19772,
+      "chunk_count": 12,
+      "document_version": 1,
+      "extracted_sha256": "7d8d5184c5695b17ae30fe21b4ebd2e448090452886ab624b3e405bc58a790c8",
+      "max_chunk_characters": 1788,
+      "min_chunk_characters": 948,
+      "source_character_count": 16538,
+      "source_id": "uscis-pm-f-chapter-4"
+    },
+    {
+      "chunk_character_count": 69699,
+      "chunk_count": 44,
+      "document_version": 1,
+      "extracted_sha256": "53a55b289114a4892029d16c91da86ce0ec14789850a4dbfacc440c6ed8f271c",
+      "max_chunk_characters": 1791,
+      "min_chunk_characters": 1060,
+      "source_character_count": 55478,
+      "source_id": "uscis-pm-f-chapter-5"
+    },
+    {
+      "chunk_character_count": 27938,
+      "chunk_count": 17,
+      "document_version": 1,
+      "extracted_sha256": "b535301d9d6489862e904e85a38d6ec55928b437efe6b4bfdfcd3c80982e210d",
+      "max_chunk_characters": 1796,
+      "min_chunk_characters": 1121,
+      "source_character_count": 22746,
+      "source_id": "uscis-pm-f-chapter-6"
+    },
+    {
+      "chunk_character_count": 18109,
+      "chunk_count": 11,
+      "document_version": 1,
+      "extracted_sha256": "e2c96d4ec61a7f123c0d6b3314d47c0e59f9589055d0fbeb4538c79bbcb4478a",
+      "max_chunk_characters": 1780,
+      "min_chunk_characters": 1461,
+      "source_character_count": 14901,
+      "source_id": "uscis-pm-f-chapter-7"
+    },
+    {
+      "chunk_character_count": 43674,
+      "chunk_count": 26,
+      "document_version": 1,
+      "extracted_sha256": "7db4375a7582e876ec1df4f67198e24e7aa7a46dffee735b7ca3c1089fba94ca",
+      "max_chunk_characters": 1795,
+      "min_chunk_characters": 1376,
+      "source_character_count": 34923,
+      "source_id": "uscis-pm-f-chapter-8"
+    },
+    {
+      "chunk_character_count": 115351,
+      "chunk_count": 66,
+      "document_version": 1,
+      "extracted_sha256": "8be68135c7c87f0696c32f8327172b0941795c76fff4368a9718f44eccb230f7",
+      "max_chunk_characters": 1799,
+      "min_chunk_characters": 1132,
+      "source_character_count": 95141,
+      "source_id": "uscis-i-765-instructions"
+    },
+    {
+      "chunk_character_count": 69565,
+      "chunk_count": 40,
+      "document_version": 1,
+      "extracted_sha256": "3d5409ca036d5cc292a40504a3156870df03d22be0a06d874a3a3bafb070e01a",
+      "max_chunk_characters": 1799,
+      "min_chunk_characters": 1458,
+      "source_character_count": 57583,
+      "source_id": "uscis-i-539-instructions"
+    },
+    {
+      "chunk_character_count": 34257,
+      "chunk_count": 20,
+      "document_version": 1,
+      "extracted_sha256": "5ad3e6fc46b6f44e178645220c7a3eee5c2b87047b6dff26e3e61955820bf10c",
+      "max_chunk_characters": 1797,
+      "min_chunk_characters": 1308,
+      "source_character_count": 28205,
+      "source_id": "ice-sevis-employment"
+    },
+    {
+      "chunk_character_count": 4637,
+      "chunk_count": 3,
+      "document_version": 1,
+      "extracted_sha256": "a01f185c8a0952d947aea18291766b4a7da40d7e1cf882b199560e5dad97d090",
+      "max_chunk_characters": 1742,
+      "min_chunk_characters": 1194,
+      "source_character_count": 4000,
+      "source_id": "ice-sevis-practical-training"
+    },
+    {
+      "chunk_character_count": 41929,
+      "chunk_count": 25,
+      "document_version": 1,
+      "extracted_sha256": "8d57c254483f1b9c71b96aa20612e7e9d9501b3decdc5ea8ead2c248bec7f216",
+      "max_chunk_characters": 1799,
+      "min_chunk_characters": 1196,
+      "source_character_count": 33723,
+      "source_id": "ice-sevis-travel"
+    },
+    {
+      "chunk_character_count": 202427,
+      "chunk_count": 115,
+      "document_version": 1,
+      "extracted_sha256": "46a42c95c5480c9c320f1b2f286066ae4dda1811ed159c80d8bbf7055fe0c419",
+      "max_chunk_characters": 1800,
+      "min_chunk_characters": 1072,
+      "source_character_count": 169801,
+      "source_id": "state-fam-9-402-5"
+    },
+    {
+      "chunk_character_count": 19047,
+      "chunk_count": 12,
+      "document_version": 1,
+      "extracted_sha256": "6c2edc9433fb80047f142e10973397f05bd1542cb3ff8d2f1125c8b8ca3405c2",
+      "max_chunk_characters": 1767,
+      "min_chunk_characters": 1135,
+      "source_character_count": 15420,
+      "source_id": "state-student-visa"
+    },
+    {
+      "chunk_character_count": 7069,
+      "chunk_count": 4,
+      "document_version": 1,
+      "extracted_sha256": "68cf919e9aefe505171062238803db9e12e2f4e8c4690e4df7f6f6e7aa9f83e7",
+      "max_chunk_characters": 1790,
+      "min_chunk_characters": 1755,
+      "source_character_count": 6076,
+      "source_id": "sits-form-i-983-overview"
+    }
+  ],
+  "total_chunk_characters": 1724524,
+  "total_chunks": 1122,
+  "total_source_characters": 1367316,
+  "total_sources": 17
+}
