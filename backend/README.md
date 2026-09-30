@@ -142,6 +142,40 @@ checksums, and official-source metadata. The generated text dataset stays ignore
 `data/processed/`; its committed report records the complete dataset checksum and
 reproducible measurements.
 
+## Build and search the local vector index
+
+Embed the frozen chunk dataset and create the exact-search index:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli build-index `
+  data/manifests/f1-policy-chunking-report.v1.json `
+  --output-vectors data/indexes/f1-policy-v1/vectors.npy `
+  --output-report data/manifests/f1-policy-vector-index-report.v1.json `
+  --report-version 1 --repository-root . `
+  --model-cache data/indexes/models --threads 1
+```
+
+Search the verified index:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli search `
+  data/manifests/f1-policy-vector-index-report.v1.json `
+  "Can an F-1 student participate in curricular practical training?" `
+  --repository-root . --model-cache data/indexes/models --top-k 5 --threads 1
+```
+
+The index uses the 384-dimensional `BAAI/bge-small-en-v1.5` embedding model through
+FastEmbed on the CPU. The implementation pins the exact ONNX model-repository commit,
+normalizes every `float32` vector, and ranks all 1,122 chunks with exact cosine
+similarity. Exact search is intentionally simpler and fully deterministic at this
+student-scale corpus size; an approximate vector database would add infrastructure
+without a meaningful retrieval benefit here.
+
+The downloaded model and generated `.npy` matrix remain under ignored `data/indexes/`.
+The committed vector-index report records their checksums, dimensions, ordered chunk-ID
+hash, dependency version, model identity, and every upstream corpus checksum. Loading or
+searching the index fails if any linked artifact has changed.
+
 ## Project structure
 
 ```text
@@ -158,12 +192,14 @@ backend/
 │           ├── cli.py
 │           ├── collection.py
 │           ├── extraction.py
+│           ├── indexing.py
 │           ├── manifest.py
 │           └── models.py
 └── tests/
     ├── test_corpus_collection.py
     ├── test_corpus_chunking.py
     ├── test_corpus_extraction.py
+    ├── test_corpus_indexing.py
     ├── test_corpus_manifest.py
     ├── test_corpus_models.py
     └── test_health.py

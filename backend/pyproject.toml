@@ -10,7 +10,10 @@ authors = [{ name = "Kethan Kanithi" }]
 requires-python = ">=3.11,<3.12"
 dependencies = [
   "beautifulsoup4==4.14.2",
+  "fastembed==0.8.1",
   "fastapi==0.141.1",
+  "huggingface-hub==1.33.0",
+  "numpy==2.4.6",
   "pypdf==6.5.0",
   "pydantic==2.13.5",
   "pydantic-settings==2.15.0",

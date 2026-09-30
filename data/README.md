@@ -183,6 +183,44 @@ and records the policy, aggregate measurements, per-source measurements, and SHA
 checksum of the complete dataset. Existing datasets or reports are never silently
 replaced with different content.
 
+## Local embeddings and exact vector index
+
+The vector-index builder accepts only the validated chunking report and re-verifies the
+report checksum, complete chunk-dataset checksum, chunk count, and chunk order. It uses
+the pinned `BAAI/bge-small-en-v1.5` model through FastEmbed's CPU ONNX runtime to produce
+384-dimensional `float32` vectors. Every vector is L2-normalized, so exact dot-product
+ranking is equivalent to cosine similarity.
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli build-index `
+  data/manifests/f1-policy-chunking-report.v1.json `
+  --output-vectors data/indexes/f1-policy-v1/vectors.npy `
+  --output-report data/manifests/f1-policy-vector-index-report.v1.json `
+  --report-version 1 --repository-root . `
+  --model-cache data/indexes/models --threads 1
+```
+
+The model cache and vector matrix stay in ignored `data/indexes/` storage. The committed
+report pins the exact model repository revision and records the engine version, model
+identity, dimensions, ordered chunk-ID hash, vector checksum, and all upstream corpus
+checksums. The current corpus has 1,122 vectors, so a deterministic exhaustive scan is
+fast enough and avoids a hosted vector database, API charges, and approximate-search
+variation.
+
+Searches revalidate the complete artifact chain before ranking results:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.corpus.cli search `
+  data/manifests/f1-policy-vector-index-report.v1.json `
+  "What documents are needed for F-1 travel?" `
+  --repository-root . --model-cache data/indexes/models --top-k 5 --threads 1
+```
+
+Retrieval smoke tests confirm that representative questions return relevant official
+passages, but they are not a formal quality result. Recall, ranking quality, robustness,
+and configuration comparisons will be measured later against the frozen, human-reviewed
+evaluation set.
+
 ## Manifest validation
 
 `manifests/source-manifest.schema.json` is generated deterministically from the
