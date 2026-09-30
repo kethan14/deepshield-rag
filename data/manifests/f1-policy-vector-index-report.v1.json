@@ -1,0 +1,23 @@
+{
+  "chunk_ids_sha256": "286068f47eca16e2e03820164ff2532d438467e675114179dabb1663dcb38aaa",
+  "chunking_report_path": "data/manifests/f1-policy-chunking-report.v1.json",
+  "chunking_report_sha256": "55e2d4f85c52511b47b9848983c78a00ef9280e4233c4e9ff2e4093a1bc89807",
+  "chunks_path": "data/processed/f1-policy-chunks.v1.jsonl",
+  "chunks_sha256": "6dcb7c03719437406fca66a215c004583bc223d3d8c5bf5a58e51ad12bc41852",
+  "corpus_id": "deepshield-rag-f1-policy",
+  "dimension": 384,
+  "dtype": "float32",
+  "embedding_engine": "fastembed",
+  "embedding_engine_version": "0.8.1",
+  "indexer_version": "1.0",
+  "model_name": "BAAI/bge-small-en-v1.5",
+  "model_repository": "Qdrant/bge-small-en-v1.5-onnx-Q",
+  "model_revision": "aa8f8b060edb00e03bfdd08813a2949946c8ba55",
+  "normalized": true,
+  "report_version": 1,
+  "schema_version": "1.0",
+  "similarity": "cosine",
+  "vector_count": 1122,
+  "vectors_path": "data/indexes/f1-policy-v1/vectors.npy",
+  "vectors_sha256": "b0f8271590136227a1635d3e2ec39dddc21f70f65cd7be4632ad42fb2425df87"
+}

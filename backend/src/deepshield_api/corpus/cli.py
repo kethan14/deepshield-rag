@@ -34,6 +34,16 @@ from deepshield_api.corpus.extraction import (
     extract_manifest,
     write_extraction_report,
 )
+from deepshield_api.corpus.indexing import (
+    DEFAULT_BATCH_SIZE,
+    FastEmbedBackend,
+    IndexingError,
+    build_vector_index,
+    render_retrieval_hits,
+    search_vector_index,
+    write_vector_index,
+    write_vector_index_report,
+)
 from deepshield_api.corpus.manifest import (
     ManifestError,
     load_source_manifest,
@@ -120,6 +130,31 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_MIN_CHUNK_CHARACTERS,
     )
+
+    index_parser = subparsers.add_parser(
+        "build-index",
+        help="Build a verified local dense-vector index from a chunking report.",
+    )
+    index_parser.add_argument("chunking_report", type=Path)
+    index_parser.add_argument("--output-vectors", type=Path, required=True)
+    index_parser.add_argument("--output-report", type=Path, required=True)
+    index_parser.add_argument("--report-version", type=int, default=1)
+    index_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    index_parser.add_argument("--model-cache", type=Path, default=Path("data/indexes/models"))
+    index_parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
+    index_parser.add_argument("--threads", type=int, default=1)
+
+    search_parser = subparsers.add_parser(
+        "search",
+        help="Run exact cosine retrieval against a verified local vector index.",
+    )
+    search_parser.add_argument("index_report", type=Path)
+    search_parser.add_argument("query")
+    search_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    search_parser.add_argument("--model-cache", type=Path, default=Path("data/indexes/models"))
+    search_parser.add_argument("--top-k", type=int, default=5)
+    search_parser.add_argument("--source-id", action="append", default=None)
+    search_parser.add_argument("--threads", type=int, default=1)
     return parser
 
 
@@ -181,6 +216,59 @@ def main(
             f"{chunking_report.total_chunks} chunks; wrote report version "
             f"{chunking_report.report_version}: {report_path}"
         )
+        return 0
+
+    if args.command == "build-index":
+        vectors_path = Path(args.output_vectors)
+        report_path = Path(args.output_report)
+        if vectors_path.resolve() == report_path.resolve():
+            print("vector index and report outputs must differ", file=sys.stderr)
+            return 1
+        if report_path.exists():
+            print(
+                f"refusing to replace an existing vector index report: {report_path}",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            embedder = FastEmbedBackend(Path(args.model_cache), threads=args.threads)
+            vector_bytes, index_report = build_vector_index(
+                Path(args.chunking_report),
+                vectors_path,
+                Path(args.repository_root),
+                embedder,
+                report_version=args.report_version,
+                batch_size=args.batch_size,
+            )
+            write_vector_index(vectors_path, vector_bytes)
+            write_vector_index_report(report_path, index_report)
+        except (ChunkingError, IndexingError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        print(
+            f"Embedded {index_report.vector_count} chunk(s) into "
+            f"{index_report.dimension}-dimensional vectors; wrote report version "
+            f"{index_report.report_version}: {report_path}"
+        )
+        return 0
+
+    if args.command == "search":
+        try:
+            embedder = FastEmbedBackend(Path(args.model_cache), threads=args.threads)
+            source_ids = set(args.source_id) if args.source_id else None
+            hits = search_vector_index(
+                str(args.query),
+                Path(args.index_report),
+                Path(args.repository_root),
+                embedder,
+                top_k=args.top_k,
+                source_ids=source_ids,
+            )
+        except (ChunkingError, IndexingError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(render_retrieval_hits(hits), end="")
         return 0
 
     manifest_path = Path(args.manifest)

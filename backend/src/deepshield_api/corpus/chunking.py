@@ -172,6 +172,19 @@ def load_extraction_report(path: Path) -> ExtractionReport:
         raise ChunkingError(f"extraction report validation failed:\n{exc}") from exc
 
 
+def load_chunking_report(path: Path) -> ChunkingReport:
+    """Load and validate a UTF-8 chunking report."""
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ChunkingError(f"unable to read chunking report: {path}") from exc
+    try:
+        return ChunkingReport.model_validate_json(content)
+    except ValidationError as exc:
+        raise ChunkingError(f"chunking report validation failed:\n{exc}") from exc
+
+
 def chunk_extraction_report(
     extraction_report_path: Path,
     chunks_path: Path,
