@@ -1,0 +1,316 @@
+{
+  "$defs": {
+    "AttackCategory": {
+      "description": "Threat classes covered by the controlled adversarial benchmark.",
+      "enum": [
+        "direct-prompt-injection",
+        "indirect-prompt-injection",
+        "system-prompt-extraction",
+        "synthetic-secret-exfiltration",
+        "fictional-pii-exfiltration",
+        "unauthorized-tool-action"
+      ],
+      "title": "AttackCategory",
+      "type": "string"
+    },
+    "BenchmarkCase": {
+      "additionalProperties": false,
+      "description": "One benign or controlled adversarial evaluation case.",
+      "properties": {
+        "attack_category": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AttackCategory"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "canary_tokens": {
+          "items": {
+            "pattern": "^DSRAG_CANARY_[A-Z0-9_]{8,80}$",
+            "type": "string"
+          },
+          "title": "Canary Tokens",
+          "type": "array"
+        },
+        "case_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "difficulty": {
+          "$ref": "#/$defs/BenchmarkDifficulty"
+        },
+        "expected_action": {
+          "$ref": "#/$defs/ExpectedAction"
+        },
+        "forbidden_content": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Forbidden Content",
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/BenchmarkKind"
+        },
+        "prompt": {
+          "maxLength": 8000,
+          "minLength": 10,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "reference_chunk_ids": {
+          "items": {
+            "maxLength": 120,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Reference Chunk Ids",
+          "type": "array"
+        },
+        "reference_source_ids": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Reference Source Ids",
+          "type": "array"
+        },
+        "required_facts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Facts",
+          "type": "array"
+        },
+        "review_status": {
+          "$ref": "#/$defs/ReviewStatus",
+          "default": "draft"
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewed At"
+        },
+        "reviewer_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewer Id"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "split": {
+          "$ref": "#/$defs/BenchmarkSplit"
+        },
+        "synthetic_data": {
+          "default": false,
+          "title": "Synthetic Data",
+          "type": "boolean"
+        },
+        "template_family": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "title": "Template Family",
+          "type": "string"
+        },
+        "topic_tags": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Topic Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "split",
+        "kind",
+        "template_family",
+        "difficulty",
+        "prompt",
+        "expected_action",
+        "topic_tags"
+      ],
+      "title": "BenchmarkCase",
+      "type": "object"
+    },
+    "BenchmarkDifficulty": {
+      "description": "Human-reviewed case difficulty used for stratified analysis.",
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "title": "BenchmarkDifficulty",
+      "type": "string"
+    },
+    "BenchmarkKind": {
+      "description": "Top-level distinction needed to measure utility and security.",
+      "enum": [
+        "benign",
+        "adversarial"
+      ],
+      "title": "BenchmarkKind",
+      "type": "string"
+    },
+    "BenchmarkSplit": {
+      "description": "Partitions used for guardrail development and final held-out reporting.",
+      "enum": [
+        "development",
+        "test"
+      ],
+      "title": "BenchmarkSplit",
+      "type": "string"
+    },
+    "BenchmarkStatus": {
+      "description": "Lifecycle state for the complete benchmark artifact.",
+      "enum": [
+        "draft",
+        "frozen"
+      ],
+      "title": "BenchmarkStatus",
+      "type": "string"
+    },
+    "ExpectedAction": {
+      "description": "Observable behavior expected from a safe and useful assistant.",
+      "enum": [
+        "answer",
+        "clarify",
+        "refuse",
+        "answer-safe-part"
+      ],
+      "title": "ExpectedAction",
+      "type": "string"
+    },
+    "ReviewStatus": {
+      "description": "Whether a benchmark label is ready for a frozen evaluation.",
+      "enum": [
+        "draft",
+        "approved"
+      ],
+      "title": "ReviewStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Versioned benchmark with leakage-resistant development and test partitions.",
+  "properties": {
+    "benchmark_id": {
+      "const": "deepshield-rag-f1-security",
+      "default": "deepshield-rag-f1-security",
+      "title": "Benchmark Id",
+      "type": "string"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/BenchmarkCase"
+      },
+      "minItems": 1,
+      "title": "Cases",
+      "type": "array"
+    },
+    "chunking_report_path": {
+      "title": "Chunking Report Path",
+      "type": "string"
+    },
+    "chunking_report_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Chunking Report Sha256",
+      "type": "string"
+    },
+    "corpus_manifest_path": {
+      "title": "Corpus Manifest Path",
+      "type": "string"
+    },
+    "corpus_manifest_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Corpus Manifest Sha256",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "manifest_version": {
+      "minimum": 1,
+      "title": "Manifest Version",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/BenchmarkStatus",
+      "default": "draft"
+    },
+    "target_case_count": {
+      "const": 600,
+      "default": 600,
+      "title": "Target Case Count",
+      "type": "integer"
+    },
+    "target_development_count": {
+      "const": 200,
+      "default": 200,
+      "title": "Target Development Count",
+      "type": "integer"
+    },
+    "target_test_count": {
+      "const": 400,
+      "default": 400,
+      "title": "Target Test Count",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "manifest_version",
+    "created_at",
+    "corpus_manifest_path",
+    "corpus_manifest_sha256",
+    "chunking_report_path",
+    "chunking_report_sha256",
+    "cases"
+  ],
+  "title": "BenchmarkManifest",
+  "type": "object"
+}
