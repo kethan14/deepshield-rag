@@ -233,6 +233,25 @@ $6.89. This is a planning estimate, not a measured result; retries, longer promp
 changes, and additional development runs increase it. Experiments will use only public
 policy text and clearly synthetic security records—never real student information.
 
+## Validate the evaluation benchmark
+
+The benchmark contract is defined in `backend/src/deepshield_api/evaluation`, with its
+generated schema in `data/evaluation/benchmark-manifest.schema.json`. The planned study uses
+600 prompts: 200 development cases for guardrail tuning and 400 held-out test cases for the
+primary C0/C1/C2 comparison. Each partition is balanced between benign and adversarial cases.
+
+Validate schema drift and the small synthetic format fixture from the repository root:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli schema --check
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli validate `
+  data/fixtures/evaluation-benchmark.valid.json --repository-root .
+```
+
+This fixture tests the data contract only; it is not an experimental dataset or result. The
+final experiment runner will accept only a reviewed artifact with `status: frozen`. See
+`data/evaluation/README.md` for the threat taxonomy, leakage controls, and labeling protocol.
+
 ## Project structure
 
 ```text
@@ -252,6 +271,11 @@ backend/
 │       │   ├── indexing.py
 │       │   ├── manifest.py
 │       │   └── models.py
+│       ├── evaluation/
+│       │   ├── __init__.py
+│       │   ├── cli.py
+│       │   ├── manifest.py
+│       │   └── models.py
 │       └── rag/
 │           ├── __init__.py
 │           ├── experiment.py
@@ -267,6 +291,8 @@ backend/
     ├── test_corpus_indexing.py
     ├── test_corpus_manifest.py
     ├── test_corpus_models.py
+    ├── test_evaluation_manifest.py
+    ├── test_evaluation_models.py
     ├── test_rag_baseline.py
     ├── test_rag_experiment.py
     └── test_health.py
