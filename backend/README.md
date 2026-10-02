@@ -184,16 +184,20 @@ vendor: the same server-side interface can use a local Ollama server or an expli
 configured hosted endpoint. API keys stay in the backend environment and are never sent
 to the browser.
 
-Copy `.env.example` to `.env`, then choose one fixed generation model:
+The research configuration freezes `gpt-5.4-mini-2026-03-17` for C0, C1, and C2.
+Copy `.env.example` to `.env`, add a server-side API key, and keep the committed values:
 
 ```dotenv
-DEEPSHIELD_LLM_BASE_URL=http://127.0.0.1:11434/v1
-DEEPSHIELD_LLM_MODEL=chosen-model-name
+DEEPSHIELD_LLM_BASE_URL=https://api.openai.com/v1
+DEEPSHIELD_LLM_MODEL=gpt-5.4-mini-2026-03-17
+DEEPSHIELD_LLM_REASONING_EFFORT=none
+DEEPSHIELD_LLM_MAX_TOKEN_PARAMETER=max_completion_tokens
+DEEPSHIELD_LLM_API_KEY=replace-in-local-env-only
 ```
 
-For a hosted endpoint, use HTTPS and set `DEEPSHIELD_LLM_API_KEY` in the uncommitted
-`.env` file. Plain HTTP is accepted only for a loopback server. Start the backend using
-the command in **Run the API**, then submit a question:
+The key belongs only in the uncommitted `.env` file. Plain HTTP remains available only
+for a loopback development server. Start the backend using the command in **Run the
+API**, then submit a question:
 
 ```powershell
 $body = @{ question = "Can an F-1 student participate in CPT?"; top_k = 5 } |
@@ -208,10 +212,26 @@ token usage. This is the intentionally minimal comparison baseline: it has a sta
 grounded-answer prompt but no attack classifier, prompt-injection detector, leakage
 scanner, authorization layer, or final-answer guardrail.
 
-The generation model is intentionally left unset in the committed configuration. Before
-experiments, one model and version must be selected, recorded, and held constant across
-C0, C1, and C2. A ChatGPT subscription is not an API credential, and no paid request is
-made merely by running the automated test suite.
+The versioned research record is `config/experiments/generation-model.v1.json`. It pins
+the provider, endpoint, exact model snapshot, zero reasoning effort, temperature, token
+limit, comparison configurations, selection date, and price snapshot. A ChatGPT
+subscription is not an API credential, and no paid request is made merely by running the
+automated test suite.
+
+### Why this model was selected
+
+The development laptop has a 22-thread Intel Core Ultra 7 155H, 16 GB RAM, and integrated
+Intel Arc graphics. It can run a small quantized local model for demonstrations, but
+hundreds of repeated C0/C1/C2 experiments would be slow and would introduce local runtime
+variation. A hosted snapshot gives higher throughput and a stable model identity.
+
+`gpt-5.4-mini-2026-03-17` was selected because it provides a pinned snapshot, supports
+Chat Completions, is suitable for high-volume workloads, and remains affordable. At the
+October 2, 2026 documented rates of $0.75 per million input tokens and $4.50 per million
+output tokens, 1,800 runs averaging 3,000 input and 350 output tokens would cost about
+$6.89. This is a planning estimate, not a measured result; retries, longer prompts, price
+changes, and additional development runs increase it. Experiments will use only public
+policy text and clearly synthetic security records—never real student information.
 
 ## Project structure
 
@@ -234,6 +254,7 @@ backend/
 │       │   └── models.py
 │       └── rag/
 │           ├── __init__.py
+│           ├── experiment.py
 │           ├── generation.py
 │           ├── models.py
 │           ├── router.py
@@ -247,6 +268,7 @@ backend/
     ├── test_corpus_manifest.py
     ├── test_corpus_models.py
     ├── test_rag_baseline.py
+    ├── test_rag_experiment.py
     └── test_health.py
 ```
 

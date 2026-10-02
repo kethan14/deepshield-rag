@@ -235,6 +235,61 @@ def test_generator_sends_expected_request_and_parses_usage(
     assert result.total_tokens == 15
 
 
+def test_generator_supports_frozen_reasoning_model_parameters(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+    response = {"choices": [{"message": {"content": "Answer [S1]."}}]}
+
+    def fake_urlopen(request: Request, timeout: float) -> FakeResponse:
+        if not isinstance(request.data, bytes):
+            raise AssertionError("expected a byte request body")
+        captured["body"] = json.loads(request.data)
+        return FakeResponse(json.dumps(response).encode())
+
+    monkeypatch.setattr("deepshield_api.rag.generation.urlopen", fake_urlopen)
+    generator = OpenAICompatibleGenerator(
+        base_url="https://api.openai.com/v1",
+        model="gpt-5.4-mini-2026-03-17",
+        reasoning_effort="none",
+        max_token_parameter="max_completion_tokens",
+        max_output_tokens=700,
+    )
+
+    generator.generate("system", "user")
+
+    assert captured["body"]["reasoning_effort"] == "none"
+    assert captured["body"]["temperature"] == 0
+    assert captured["body"]["max_completion_tokens"] == 700
+    assert "max_tokens" not in captured["body"]
+
+
+def test_generator_omits_temperature_for_positive_reasoning_effort(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+    response = {"choices": [{"message": {"content": "Answer [S1]."}}]}
+
+    def fake_urlopen(request: Request, timeout: float) -> FakeResponse:
+        if not isinstance(request.data, bytes):
+            raise AssertionError("expected a byte request body")
+        captured["body"] = json.loads(request.data)
+        return FakeResponse(json.dumps(response).encode())
+
+    monkeypatch.setattr("deepshield_api.rag.generation.urlopen", fake_urlopen)
+    generator = OpenAICompatibleGenerator(
+        base_url="https://api.example.com/v1",
+        model="reasoning-model",
+        reasoning_effort="low",
+        max_token_parameter="max_completion_tokens",
+    )
+
+    generator.generate("system", "user")
+
+    assert captured["body"]["reasoning_effort"] == "low"
+    assert "temperature" not in captured["body"]
+
+
 @pytest.mark.parametrize(
     "content",
     [

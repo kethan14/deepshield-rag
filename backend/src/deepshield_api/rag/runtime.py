@@ -13,7 +13,11 @@ from deepshield_api.corpus.indexing import (
     RetrievalHit,
     search_vector_index,
 )
-from deepshield_api.rag.generation import OpenAICompatibleGenerator
+from deepshield_api.rag.generation import (
+    MaxTokenParameter,
+    OpenAICompatibleGenerator,
+    ReasoningEffort,
+)
 from deepshield_api.rag.service import BaselineRagService
 
 
@@ -39,6 +43,8 @@ class RagSettings(BaseSettings):
     llm_api_key: SecretStr | None = None
     llm_timeout_seconds: float = Field(default=60.0, ge=1.0, le=300.0)
     llm_max_output_tokens: int = Field(default=700, ge=1, le=4_096)
+    llm_reasoning_effort: ReasoningEffort | None = None
+    llm_max_token_parameter: MaxTokenParameter = "max_tokens"
 
 
 class LocalCorpusRetriever:
@@ -76,6 +82,8 @@ def build_baseline_rag_service(settings: RagSettings | None = None) -> BaselineR
         ),
         timeout_seconds=resolved.llm_timeout_seconds,
         max_output_tokens=resolved.llm_max_output_tokens,
+        reasoning_effort=resolved.llm_reasoning_effort,
+        max_token_parameter=resolved.llm_max_token_parameter,
     )
     try:
         retriever = LocalCorpusRetriever(resolved)

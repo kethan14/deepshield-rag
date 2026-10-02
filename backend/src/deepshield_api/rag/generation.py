@@ -2,12 +2,14 @@
 
 import json
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
+ReasoningEffort = Literal["none", "low", "medium", "high", "xhigh"]
+MaxTokenParameter = Literal["max_tokens", "max_completion_tokens"]
 
 
 class GenerationError(RuntimeError):
@@ -46,6 +48,8 @@ class OpenAICompatibleGenerator:
         api_key: str | None = None,
         timeout_seconds: float = 60.0,
         max_output_tokens: int = 700,
+        reasoning_effort: ReasoningEffort | None = None,
+        max_token_parameter: MaxTokenParameter = "max_tokens",
     ) -> None:
         self._base_url = _validate_base_url(base_url)
         self.model = _require_nonempty(model, "model")
@@ -56,22 +60,26 @@ class OpenAICompatibleGenerator:
             raise ValueError("max_output_tokens must be between 1 and 4096")
         self._timeout_seconds = timeout_seconds
         self._max_output_tokens = max_output_tokens
+        self._reasoning_effort = reasoning_effort
+        self._max_token_parameter = max_token_parameter
 
     def generate(self, system_prompt: str, user_prompt: str) -> GenerationResult:
         """Request one deterministic non-streaming chat completion."""
 
-        payload = json.dumps(
-            {
-                "model": self.model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "temperature": 0,
-                "max_tokens": self._max_output_tokens,
-                "stream": False,
-            }
-        ).encode("utf-8")
+        request_body: dict[str, object] = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            self._max_token_parameter: self._max_output_tokens,
+            "stream": False,
+        }
+        if self._reasoning_effort is not None:
+            request_body["reasoning_effort"] = self._reasoning_effort
+        if self._reasoning_effort in {None, "none"}:
+            request_body["temperature"] = 0
+        payload = json.dumps(request_body).encode("utf-8")
         headers = {"Content-Type": "application/json"}
         if self._api_key is not None:
             headers["Authorization"] = f"Bearer {self._api_key}"
