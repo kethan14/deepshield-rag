@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from deepshield_api import __version__
+from deepshield_api.rag.router import router as assistant_router
 
 
 class HealthResponse(BaseModel):
@@ -25,6 +26,7 @@ def create_app() -> FastAPI:
         redoc_url="/api/redoc",
         openapi_url="/api/openapi.json",
     )
+    application.include_router(assistant_router)
 
     @application.get(
         "/api/v1/health",

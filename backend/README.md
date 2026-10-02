@@ -176,6 +176,43 @@ The committed vector-index report records their checksums, dimensions, ordered c
 hash, dependency version, model identity, and every upstream corpus checksum. Loading or
 searching the index fails if any linked artifact has changed.
 
+## Run the C0 baseline RAG API
+
+The C0 pipeline combines the verified exact-cosine retriever with an
+OpenAI-compatible chat-completion endpoint. This keeps the project independent of one
+vendor: the same server-side interface can use a local Ollama server or an explicitly
+configured hosted endpoint. API keys stay in the backend environment and are never sent
+to the browser.
+
+Copy `.env.example` to `.env`, then choose one fixed generation model:
+
+```dotenv
+DEEPSHIELD_LLM_BASE_URL=http://127.0.0.1:11434/v1
+DEEPSHIELD_LLM_MODEL=chosen-model-name
+```
+
+For a hosted endpoint, use HTTPS and set `DEEPSHIELD_LLM_API_KEY` in the uncommitted
+`.env` file. Plain HTTP is accepted only for a loopback server. Start the backend using
+the command in **Run the API**, then submit a question:
+
+```powershell
+$body = @{ question = "Can an F-1 student participate in CPT?"; top_k = 5 } |
+  ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/assistant/query `
+  -ContentType "application/json" -Body $body
+```
+
+The response contains the C0 answer, every retrieved passage, citation labels, invalid
+model-generated citation labels, model identities, finish reason, and provider-reported
+token usage. This is the intentionally minimal comparison baseline: it has a standard
+grounded-answer prompt but no attack classifier, prompt-injection detector, leakage
+scanner, authorization layer, or final-answer guardrail.
+
+The generation model is intentionally left unset in the committed configuration. Before
+experiments, one model and version must be selected, recorded, and held constant across
+C0, C1, and C2. A ChatGPT subscription is not an API credential, and no paid request is
+made merely by running the automated test suite.
+
 ## Project structure
 
 ```text
@@ -186,15 +223,22 @@ backend/
 │   └── deepshield_api/
 │       ├── __init__.py
 │       ├── main.py
-│       └── corpus/
+│       ├── corpus/
+│       │   ├── __init__.py
+│       │   ├── chunking.py
+│       │   ├── cli.py
+│       │   ├── collection.py
+│       │   ├── extraction.py
+│       │   ├── indexing.py
+│       │   ├── manifest.py
+│       │   └── models.py
+│       └── rag/
 │           ├── __init__.py
-│           ├── chunking.py
-│           ├── cli.py
-│           ├── collection.py
-│           ├── extraction.py
-│           ├── indexing.py
-│           ├── manifest.py
-│           └── models.py
+│           ├── generation.py
+│           ├── models.py
+│           ├── router.py
+│           ├── runtime.py
+│           └── service.py
 └── tests/
     ├── test_corpus_collection.py
     ├── test_corpus_chunking.py
@@ -202,6 +246,7 @@ backend/
     ├── test_corpus_indexing.py
     ├── test_corpus_manifest.py
     ├── test_corpus_models.py
+    ├── test_rag_baseline.py
     └── test_health.py
 ```
 
