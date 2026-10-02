@@ -1,0 +1,20 @@
+{
+  "base_url": "https://api.openai.com/v1",
+  "configuration_id": "generation-model-v1",
+  "configurations": [
+    "C0",
+    "C1",
+    "C2"
+  ],
+  "endpoint": "chat-completions",
+  "input_usd_per_million_tokens": 0.75,
+  "max_completion_tokens": 700,
+  "model": "gpt-5.4-mini-2026-03-17",
+  "output_usd_per_million_tokens": 4.5,
+  "pricing_as_of": "2026-10-02",
+  "provider": "openai",
+  "reasoning_effort": "none",
+  "schema_version": "1.0",
+  "selected_on": "2026-10-02",
+  "temperature": 0
+}
