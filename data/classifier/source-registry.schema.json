@@ -1,0 +1,276 @@
+{
+  "$defs": {
+    "ArtifactStatus": {
+      "description": "Lifecycle state for classifier data artifacts.",
+      "enum": [
+        "draft",
+        "frozen"
+      ],
+      "title": "ArtifactStatus",
+      "type": "string"
+    },
+    "ClassifierSource": {
+      "additionalProperties": false,
+      "description": "One licensed, immutable external classifier-data source.",
+      "properties": {
+        "citation": {
+          "minLength": 1,
+          "title": "Citation",
+          "type": "string"
+        },
+        "columns": {
+          "$ref": "#/$defs/SourceColumns"
+        },
+        "dataset_id": {
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "dataset_url": {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "title": "Dataset Url",
+          "type": "string"
+        },
+        "expected_rows": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Rows"
+        },
+        "files": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Files",
+          "type": "array"
+        },
+        "grouping_strategy": {
+          "$ref": "#/$defs/GroupingStrategy"
+        },
+        "label_mapping": {
+          "additionalProperties": {
+            "$ref": "#/$defs/RiskLabel"
+          },
+          "title": "Label Mapping",
+          "type": "object"
+        },
+        "lfs_sha256": {
+          "additionalProperties": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "title": "Lfs Sha256",
+          "type": "object"
+        },
+        "license_spdx": {
+          "enum": [
+            "Apache-2.0",
+            "MIT"
+          ],
+          "title": "License Spdx",
+          "type": "string"
+        },
+        "license_url": {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "title": "License Url",
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Limitations",
+          "type": "array"
+        },
+        "provider": {
+          "const": "hugging-face",
+          "default": "hugging-face",
+          "title": "Provider",
+          "type": "string"
+        },
+        "purpose": {
+          "$ref": "#/$defs/SourcePurpose"
+        },
+        "revision": {
+          "pattern": "^[a-f0-9]{40}$",
+          "title": "Revision",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "title": "Source Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "dataset_id",
+        "revision",
+        "dataset_url",
+        "license_spdx",
+        "license_url",
+        "purpose",
+        "grouping_strategy",
+        "files",
+        "columns",
+        "label_mapping",
+        "citation",
+        "limitations"
+      ],
+      "title": "ClassifierSource",
+      "type": "object"
+    },
+    "GroupingStrategy": {
+      "description": "How related examples are kept together to prevent split leakage.",
+      "enum": [
+        "upstream-column",
+        "derived-near-duplicate-cluster",
+        "external-source-split"
+      ],
+      "title": "GroupingStrategy",
+      "type": "string"
+    },
+    "RiskLabel": {
+      "description": "Binary decision learned by the lightweight classifier.",
+      "enum": [
+        "benign",
+        "adversarial"
+      ],
+      "title": "RiskLabel",
+      "type": "string"
+    },
+    "SourceColumns": {
+      "additionalProperties": false,
+      "description": "Upstream columns needed for deterministic normalization.",
+      "properties": {
+        "context": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Severity"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "label"
+      ],
+      "title": "SourceColumns",
+      "type": "object"
+    },
+    "SourcePurpose": {
+      "description": "Permitted use of one external source in this project.",
+      "enum": [
+        "development",
+        "external-test"
+      ],
+      "title": "SourcePurpose",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Versioned selection and licensing record for classifier data.",
+  "properties": {
+    "benchmark_exclusion_policy": {
+      "minLength": 1,
+      "title": "Benchmark Exclusion Policy",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "registry_id": {
+      "const": "deepshield-risk-classifier-sources",
+      "default": "deepshield-risk-classifier-sources",
+      "title": "Registry Id",
+      "type": "string"
+    },
+    "registry_version": {
+      "minimum": 1,
+      "title": "Registry Version",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/ClassifierSource"
+      },
+      "minItems": 2,
+      "title": "Sources",
+      "type": "array"
+    },
+    "status": {
+      "$ref": "#/$defs/ArtifactStatus"
+    }
+  },
+  "required": [
+    "registry_version",
+    "status",
+    "created_at",
+    "benchmark_exclusion_policy",
+    "sources"
+  ],
+  "title": "ClassifierSourceRegistry",
+  "type": "object"
+}

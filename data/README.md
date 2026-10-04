@@ -14,6 +14,7 @@ data/
 ├── README.md
 ├── manifests/   # Source schema and later approved collection metadata
 ├── fixtures/    # Small, explicitly synthetic records used by automated tests
+├── classifier/  # Classifier provenance, schemas, and local derived-artifact boundaries
 ├── evaluation/  # Version-controlled benchmark prompts and reviewed labels
 ├── incoming/    # Temporary browser downloads; generated locally
 ├── raw/         # Downloaded source files; generated locally

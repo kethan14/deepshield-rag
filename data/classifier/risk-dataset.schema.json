@@ -1,0 +1,265 @@
+{
+  "$defs": {
+    "ArtifactStatus": {
+      "description": "Lifecycle state for classifier data artifacts.",
+      "enum": [
+        "draft",
+        "frozen"
+      ],
+      "title": "ArtifactStatus",
+      "type": "string"
+    },
+    "ReviewStatus": {
+      "description": "Human-review state for derived or synthetic classifier examples.",
+      "enum": [
+        "draft",
+        "approved"
+      ],
+      "title": "ReviewStatus",
+      "type": "string"
+    },
+    "RiskCategory": {
+      "description": "Fine-grained research labels retained for error analysis.",
+      "enum": [
+        "benign",
+        "direct-prompt-injection",
+        "role-manipulation",
+        "system-prompt-extraction",
+        "sensitive-data-exfiltration",
+        "unauthorized-tool-action",
+        "other-adversarial"
+      ],
+      "title": "RiskCategory",
+      "type": "string"
+    },
+    "RiskExample": {
+      "additionalProperties": false,
+      "description": "One traceable classifier example kept separate from the 600-case benchmark.",
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/RiskCategory"
+        },
+        "example_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "title": "Example Id",
+          "type": "string"
+        },
+        "group_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "title": "Group Id",
+          "type": "string"
+        },
+        "label": {
+          "$ref": "#/$defs/RiskLabel"
+        },
+        "review_status": {
+          "$ref": "#/$defs/ReviewStatus",
+          "default": "draft"
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewed At"
+        },
+        "reviewer_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewer Id"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_record_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Source Record Id",
+          "type": "string"
+        },
+        "split": {
+          "$ref": "#/$defs/RiskSplit"
+        },
+        "synthetic": {
+          "default": false,
+          "title": "Synthetic",
+          "type": "boolean"
+        },
+        "text": {
+          "maxLength": 8000,
+          "minLength": 3,
+          "title": "Text",
+          "type": "string"
+        },
+        "text_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Text Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "example_id",
+        "source_id",
+        "source_record_id",
+        "group_id",
+        "split",
+        "label",
+        "category",
+        "text",
+        "text_sha256"
+      ],
+      "title": "RiskExample",
+      "type": "object"
+    },
+    "RiskLabel": {
+      "description": "Binary decision learned by the lightweight classifier.",
+      "enum": [
+        "benign",
+        "adversarial"
+      ],
+      "title": "RiskLabel",
+      "type": "string"
+    },
+    "RiskSplit": {
+      "description": "Leakage-resistant classifier-data partitions.",
+      "enum": [
+        "train",
+        "validation",
+        "test",
+        "external-test"
+      ],
+      "title": "RiskSplit",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Leakage-resistant dataset contract for lightweight classifier experiments.",
+  "properties": {
+    "benchmark_case_ids_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Benchmark Case Ids Sha256"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "dataset_id": {
+      "const": "deepshield-risk-classifier",
+      "default": "deepshield-risk-classifier",
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "dataset_version": {
+      "minimum": 1,
+      "title": "Dataset Version",
+      "type": "integer"
+    },
+    "examples": {
+      "items": {
+        "$ref": "#/$defs/RiskExample"
+      },
+      "minItems": 1,
+      "title": "Examples",
+      "type": "array"
+    },
+    "minimum_example_count": {
+      "const": 1000,
+      "default": 1000,
+      "title": "Minimum Example Count",
+      "type": "integer"
+    },
+    "minimum_external_test_count": {
+      "const": 200,
+      "default": 200,
+      "title": "Minimum External Test Count",
+      "type": "integer"
+    },
+    "minimum_test_count": {
+      "const": 200,
+      "default": 200,
+      "title": "Minimum Test Count",
+      "type": "integer"
+    },
+    "minimum_train_count": {
+      "const": 500,
+      "default": 500,
+      "title": "Minimum Train Count",
+      "type": "integer"
+    },
+    "minimum_validation_count": {
+      "const": 100,
+      "default": 100,
+      "title": "Minimum Validation Count",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_registry_path": {
+      "const": "data/classifier/source-registry.v1.json",
+      "title": "Source Registry Path",
+      "type": "string"
+    },
+    "source_registry_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Registry Sha256",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/ArtifactStatus"
+    }
+  },
+  "required": [
+    "dataset_version",
+    "status",
+    "created_at",
+    "source_registry_path",
+    "source_registry_sha256",
+    "examples"
+  ],
+  "title": "RiskDatasetManifest",
+  "type": "object"
+}
