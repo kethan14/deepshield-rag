@@ -256,8 +256,9 @@ def test_collection_models_reject_inconsistent_paths_and_counts() -> None:
 def test_collection_cli_checks_schema_and_committed_receipt(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    schema = REPOSITORY_ROOT / "data" / "classifier" / "source-collection.schema.json"
     receipt = REPOSITORY_ROOT / "data" / "classifier" / "source-collection.v1.json"
-    assert main(["schema", "collection", "--check"]) == 0
+    assert main(["schema", "collection", "--output", str(schema), "--check"]) == 0
     assert (
         main(["validate-collection", str(receipt), "--repository-root", str(REPOSITORY_ROOT)]) == 0
     )
