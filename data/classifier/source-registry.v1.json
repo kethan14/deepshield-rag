@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "registry_id": "deepshield-risk-classifier-sources",
+  "registry_version": 1,
+  "status": "frozen",
+  "created_at": "2026-10-04T01:55:00Z",
+  "benchmark_exclusion_policy": "No example from the 600-case DeepShield-RAG benchmark may be used to train, validate, select, or tune the risk classifier. Exact hashes, normalized text, template families, and near-duplicate clusters must be checked before a classifier dataset is frozen.",
+  "sources": [
+    {
+      "source_id": "jackhhao-jailbreak-classification",
+      "provider": "hugging-face",
+      "dataset_id": "jackhhao/jailbreak-classification",
+      "revision": "2f2ceeb39658696fd3f462403562b6eea5306287",
+      "dataset_url": "https://huggingface.co/datasets/jackhhao/jailbreak-classification/tree/2f2ceeb39658696fd3f462403562b6eea5306287",
+      "license_spdx": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "purpose": "development",
+      "grouping_strategy": "derived-near-duplicate-cluster",
+      "files": [
+        "balanced/jailbreak_dataset_train_balanced.csv",
+        "balanced/jailbreak_dataset_test_balanced.csv"
+      ],
+      "columns": {
+        "text": "prompt",
+        "label": "type",
+        "group": null,
+        "context": null,
+        "severity": null
+      },
+      "label_mapping": {
+        "benign": "benign",
+        "jailbreak": "adversarial"
+      },
+      "expected_rows": 1306,
+      "lfs_sha256": {},
+      "citation": "jackhhao. Jailbreak Classification dataset. Hugging Face, revision 2f2ceeb39658696fd3f462403562b6eea5306287.",
+      "limitations": [
+        "The source targets jailbreak detection rather than every DeepShield-RAG threat category.",
+        "The upstream files do not provide family IDs, so deterministic near-duplicate clustering is required before any project split.",
+        "Upstream labels and source provenance require sampling and human review before the derived dataset can be frozen."
+      ]
+    },
+    {
+      "source_id": "spml-contextual-prompt-injection",
+      "provider": "hugging-face",
+      "dataset_id": "reshabhs/SPML_Chatbot_Prompt_Injection",
+      "revision": "fa92f0f0be52425069940fd8d498254eac76ee45",
+      "dataset_url": "https://huggingface.co/datasets/reshabhs/SPML_Chatbot_Prompt_Injection/tree/fa92f0f0be52425069940fd8d498254eac76ee45",
+      "license_spdx": "MIT",
+      "license_url": "https://opensource.org/license/mit",
+      "purpose": "external-test",
+      "grouping_strategy": "external-source-split",
+      "files": ["spml_prompt_injection.csv"],
+      "columns": {
+        "text": "User Prompt",
+        "label": "Prompt Injection",
+        "group": null,
+        "context": "System Prompt",
+        "severity": "Degree"
+      },
+      "label_mapping": {
+        "0": "benign",
+        "1": "adversarial"
+      },
+      "expected_rows": 16012,
+      "lfs_sha256": {
+        "spml_prompt_injection.csv": "4ca6590cd8ec10832fcebee5e243acb32be5c3e79b7a260f8638eed738c784f8"
+      },
+      "citation": "Sharma, Gupta, and Grossman. SPML: A DSL for Defending Language Models Against Prompt Attacks. arXiv:2402.11755, 2024.",
+      "limitations": [
+        "The dataset authors caution that its limited attack techniques should not be treated as a standalone detector-training source.",
+        "Examples depend on paired system-prompt context, while the first lightweight classifier will screen user or retrieved text independently.",
+        "The source is reserved for external stress testing and must never enter development partitions."
+      ]
+    }
+  ]
+}

@@ -56,3 +56,9 @@ htmlcov/
 /data/processed/
 /data/indexes/
 /data/incoming/
+
+# Locally collected and derived classifier artifacts
+
+/data/classifier/raw/
+/data/classifier/processed/
+/data/classifier/models/

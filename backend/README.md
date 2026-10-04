@@ -284,6 +284,28 @@ This fixture tests the data contract only; it is not an experimental dataset or 
 final experiment runner will accept only a reviewed artifact with `status: frozen`. See
 `data/evaluation/README.md` for the threat taxonomy, leakage controls, and labeling protocol.
 
+## Validate the C2 classifier-data foundation
+
+The C2 risk classifier has a separate data contract under
+`backend/src/deepshield_api/classifier`. Its frozen source registry pins one Apache-2.0
+development dataset and one MIT external stress-test dataset to immutable revisions. It also
+records each source's intended use, columns, labels, license, citation, checksum when known,
+and limitations.
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema sources --check
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema dataset --check
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-sources `
+  data/classifier/source-registry.v1.json
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-dataset `
+  data/fixtures/risk-dataset.valid.json --repository-root .
+```
+
+The small committed fixture tests the contract only. It is not training data or a measured
+result. A frozen classifier artifact must keep related prompt groups in one split, contain no
+duplicate text hashes, include human review, preserve an independent external-test source, and
+record evidence that the 600-case system benchmark was excluded.
+
 ## Project structure
 
 ```text
@@ -294,6 +316,11 @@ backend/
 │   └── deepshield_api/
 │       ├── __init__.py
 │       ├── main.py
+│       ├── classifier/
+│       │   ├── __init__.py
+│       │   ├── cli.py
+│       │   ├── manifest.py
+│       │   └── models.py
 │       ├── corpus/
 │       │   ├── __init__.py
 │       │   ├── chunking.py
@@ -326,6 +353,7 @@ backend/
     ├── test_corpus_indexing.py
     ├── test_corpus_manifest.py
     ├── test_corpus_models.py
+    ├── test_classifier_data.py
     ├── test_evaluation_manifest.py
     ├── test_evaluation_models.py
     ├── test_rag_baseline.py
