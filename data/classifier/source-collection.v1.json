@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "collection_id": "deepshield-risk-classifier-source-collection",
+  "receipt_version": 1,
+  "collected_at": "2026-10-04T02:40:57.750085Z",
+  "source_registry_path": "data/classifier/source-registry.v2.json",
+  "source_registry_sha256": "4348e821ffa91822e4f1642f6d76a4838bfa95afce4d401ae52a28b422812252",
+  "files": [
+    {
+      "source_id": "jackhhao-jailbreak-classification",
+      "dataset_id": "jackhhao/jailbreak-classification",
+      "revision": "2f2ceeb39658696fd3f462403562b6eea5306287",
+      "source_file": "balanced/jailbreak_dataset_train_balanced.csv",
+      "raw_path": "data/classifier/raw/jackhhao-jailbreak-classification/balanced/jailbreak_dataset_train_balanced.csv",
+      "sha256": "e0c1460d229dc5d9162d5393a4e5e42382e862d04f400354bd4123b7d5257fff",
+      "size_bytes": 1309507,
+      "row_count": 1044,
+      "columns": ["prompt", "type"],
+      "label_counts": {
+        "benign": 517,
+        "jailbreak": 527
+      },
+      "empty_text_count": 0
+    },
+    {
+      "source_id": "jackhhao-jailbreak-classification",
+      "dataset_id": "jackhhao/jailbreak-classification",
+      "revision": "2f2ceeb39658696fd3f462403562b6eea5306287",
+      "source_file": "balanced/jailbreak_dataset_test_balanced.csv",
+      "raw_path": "data/classifier/raw/jackhhao-jailbreak-classification/balanced/jailbreak_dataset_test_balanced.csv",
+      "sha256": "809ef0d7c82fa05c31e818e9c3ff68f769632ac6d11cc3b43254cada577869a9",
+      "size_bytes": 369990,
+      "row_count": 262,
+      "columns": ["prompt", "type"],
+      "label_counts": {
+        "benign": 123,
+        "jailbreak": 139
+      },
+      "empty_text_count": 0
+    },
+    {
+      "source_id": "spml-contextual-prompt-injection",
+      "dataset_id": "reshabhs/SPML_Chatbot_Prompt_Injection",
+      "revision": "fa92f0f0be52425069940fd8d498254eac76ee45",
+      "source_file": "spml_prompt_injection.csv",
+      "raw_path": "data/classifier/raw/spml-contextual-prompt-injection/spml_prompt_injection.csv",
+      "sha256": "4ca6590cd8ec10832fcebee5e243acb32be5c3e79b7a260f8638eed738c784f8",
+      "size_bytes": 29051327,
+      "row_count": 16012,
+      "columns": ["System Prompt", "User Prompt", "Prompt injection", "Degree", "Source"],
+      "label_counts": {
+        "0": 3470,
+        "1": 12542
+      },
+      "empty_text_count": 1
+    }
+  ]
+}

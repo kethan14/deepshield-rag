@@ -195,6 +195,106 @@ class ClassifierSourceRegistry(BaseModel):
         return self
 
 
+class CollectedClassifierFile(BaseModel):
+    """Verified metadata for one locally collected classifier source file."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    source_id: Slug
+    dataset_id: str = Field(pattern=r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+    revision: str = Field(pattern=r"^[a-f0-9]{40}$")
+    source_file: str = Field(min_length=1)
+    raw_path: str = Field(min_length=1)
+    sha256: Sha256Digest
+    size_bytes: int = Field(ge=1)
+    row_count: int = Field(ge=1)
+    columns: list[str] = Field(min_length=1)
+    label_counts: dict[str, int] = Field(min_length=2)
+    empty_text_count: int = Field(ge=0)
+
+    @field_validator("source_file")
+    @classmethod
+    def require_safe_source_file(cls, value: str) -> str:
+        path = PurePosixPath(value)
+        if path.is_absolute() or ".." in path.parts or path.suffix.casefold() != ".csv":
+            raise ValueError("collected source file must be a safe CSV path")
+        return path.as_posix()
+
+    @field_validator("raw_path")
+    @classmethod
+    def require_classifier_raw_path(cls, value: str) -> str:
+        path = PurePosixPath(value)
+        if (
+            path.is_absolute()
+            or ".." in path.parts
+            or path.parts[:3] != ("data", "classifier", "raw")
+            or path.suffix.casefold() != ".csv"
+        ):
+            raise ValueError("raw_path must be a safe CSV path under data/classifier/raw")
+        return path.as_posix()
+
+    @field_validator("columns")
+    @classmethod
+    def require_unique_columns(cls, value: list[str]) -> list[str]:
+        if any(not column for column in value) or len(value) != len(set(value)):
+            raise ValueError("collected CSV columns must be non-empty and unique")
+        return value
+
+    @field_validator("label_counts")
+    @classmethod
+    def require_positive_label_counts(cls, value: dict[str, int]) -> dict[str, int]:
+        if any(not label or count <= 0 for label, count in value.items()):
+            raise ValueError("collected label counts must be positive")
+        return value
+
+    @model_validator(mode="after")
+    def validate_counts_and_identity(self) -> Self:
+        if sum(self.label_counts.values()) != self.row_count:
+            raise ValueError("label counts must sum to the collected row count")
+        if self.empty_text_count > self.row_count:
+            raise ValueError("empty text count cannot exceed the collected row count")
+        expected_prefix = PurePosixPath("data", "classifier", "raw", self.source_id)
+        raw_path = PurePosixPath(self.raw_path)
+        if raw_path.parts[: len(expected_prefix.parts)] != expected_prefix.parts:
+            raise ValueError("raw_path source directory must match source_id")
+        if raw_path.relative_to(expected_prefix) != PurePosixPath(self.source_file):
+            raise ValueError("raw_path must preserve the registered source file path")
+        return self
+
+
+class ClassifierCollectionReceipt(BaseModel):
+    """Versioned evidence for locally collected, immutable classifier source files."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    schema_version: Literal["1.0"] = "1.0"
+    collection_id: Literal["deepshield-risk-classifier-source-collection"] = (
+        "deepshield-risk-classifier-source-collection"
+    )
+    receipt_version: int = Field(ge=1)
+    collected_at: datetime
+    source_registry_path: Literal["data/classifier/source-registry.v2.json"]
+    source_registry_sha256: Sha256Digest
+    files: list[CollectedClassifierFile] = Field(min_length=1)
+
+    @field_validator("collected_at")
+    @classmethod
+    def require_collection_timezone(cls, value: datetime) -> datetime:
+        if value.utcoffset() is None:
+            raise ValueError("collected_at must include a timezone")
+        return value
+
+    @model_validator(mode="after")
+    def require_unique_collection_records(self) -> Self:
+        identities = [(item.source_id, item.source_file) for item in self.files]
+        raw_paths = [item.raw_path for item in self.files]
+        if len(identities) != len(set(identities)):
+            raise ValueError("collection receipt contains duplicate source files")
+        if len(raw_paths) != len(set(raw_paths)):
+            raise ValueError("collection receipt contains duplicate raw paths")
+        return self
+
+
 class RiskExample(BaseModel):
     """One traceable classifier example kept separate from the 600-case benchmark."""
 
@@ -253,7 +353,7 @@ class RiskDatasetManifest(BaseModel):
     dataset_version: int = Field(ge=1)
     status: ArtifactStatus
     created_at: datetime
-    source_registry_path: Literal["data/classifier/source-registry.v1.json"]
+    source_registry_path: Literal["data/classifier/source-registry.v2.json"]
     source_registry_sha256: Sha256Digest
     benchmark_case_ids_sha256: Sha256Digest | None = None
     minimum_example_count: Literal[1000] = 1000
