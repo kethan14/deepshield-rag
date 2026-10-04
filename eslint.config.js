@@ -11,6 +11,7 @@ export default tseslint.config(
       "dist",
       ".output",
       ".vinxi",
+      "**/.codex-sandbox-runtime/**",
       "**/.venv/**",
       "**/htmlcov/**",
       "**/.pytest_cache/**",

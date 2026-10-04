@@ -1,0 +1,302 @@
+{
+  "$defs": {
+    "NormalizationRules": {
+      "additionalProperties": false,
+      "description": "Frozen text and split rules used to derive classifier candidates.",
+      "properties": {
+        "casefold_deduplication": {
+          "const": true,
+          "default": true,
+          "title": "Casefold Deduplication",
+          "type": "boolean"
+        },
+        "collapse_whitespace": {
+          "const": true,
+          "default": true,
+          "title": "Collapse Whitespace",
+          "type": "boolean"
+        },
+        "development_split_percentages": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/RiskSplit"
+          },
+          "title": "Development Split Percentages",
+          "type": "object"
+        },
+        "development_split_seed": {
+          "const": "deepshield-c2-split-v1",
+          "default": "deepshield-c2-split-v1",
+          "title": "Development Split Seed",
+          "type": "string"
+        },
+        "maximum_text_characters": {
+          "const": 8000,
+          "default": 8000,
+          "title": "Maximum Text Characters",
+          "type": "integer"
+        },
+        "near_duplicate_jaccard_threshold": {
+          "default": 0.82,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Near Duplicate Jaccard Threshold",
+          "type": "number"
+        },
+        "near_duplicate_token_ngram_size": {
+          "const": 3,
+          "default": 3,
+          "title": "Near Duplicate Token Ngram Size",
+          "type": "integer"
+        },
+        "rules_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Rules Version",
+          "type": "string"
+        },
+        "unicode_form": {
+          "const": "NFKC",
+          "default": "NFKC",
+          "title": "Unicode Form",
+          "type": "string"
+        }
+      },
+      "title": "NormalizationRules",
+      "type": "object"
+    },
+    "RiskLabel": {
+      "description": "Binary decision learned by the lightweight classifier.",
+      "enum": [
+        "benign",
+        "adversarial"
+      ],
+      "title": "RiskLabel",
+      "type": "string"
+    },
+    "RiskSplit": {
+      "description": "Leakage-resistant classifier-data partitions.",
+      "enum": [
+        "train",
+        "validation",
+        "test",
+        "external-test"
+      ],
+      "title": "RiskSplit",
+      "type": "string"
+    },
+    "SourcePreprocessingSummary": {
+      "additionalProperties": false,
+      "description": "Auditable row accounting for one registered classifier source.",
+      "properties": {
+        "cross_source_exact_duplicates_excluded": {
+          "minimum": 0,
+          "title": "Cross Source Exact Duplicates Excluded",
+          "type": "integer"
+        },
+        "cross_source_near_duplicates_excluded": {
+          "minimum": 0,
+          "title": "Cross Source Near Duplicates Excluded",
+          "type": "integer"
+        },
+        "duplicate_rows_excluded": {
+          "minimum": 0,
+          "title": "Duplicate Rows Excluded",
+          "type": "integer"
+        },
+        "empty_rows_excluded": {
+          "minimum": 0,
+          "title": "Empty Rows Excluded",
+          "type": "integer"
+        },
+        "input_rows": {
+          "minimum": 1,
+          "title": "Input Rows",
+          "type": "integer"
+        },
+        "output_label_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/RiskLabel"
+          },
+          "title": "Output Label Counts",
+          "type": "object"
+        },
+        "output_rows": {
+          "minimum": 0,
+          "title": "Output Rows",
+          "type": "integer"
+        },
+        "overlength_rows_excluded": {
+          "minimum": 0,
+          "title": "Overlength Rows Excluded",
+          "type": "integer"
+        },
+        "source_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "too_short_rows_excluded": {
+          "minimum": 0,
+          "title": "Too Short Rows Excluded",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "source_id",
+        "input_rows",
+        "output_rows",
+        "empty_rows_excluded",
+        "too_short_rows_excluded",
+        "overlength_rows_excluded",
+        "duplicate_rows_excluded",
+        "cross_source_exact_duplicates_excluded",
+        "cross_source_near_duplicates_excluded",
+        "output_label_counts"
+      ],
+      "title": "SourcePreprocessingSummary",
+      "type": "object"
+    },
+    "SplitPreprocessingSummary": {
+      "additionalProperties": false,
+      "description": "Counts used to verify the derived split distribution.",
+      "properties": {
+        "group_count": {
+          "minimum": 1,
+          "title": "Group Count",
+          "type": "integer"
+        },
+        "label_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/RiskLabel"
+          },
+          "title": "Label Counts",
+          "type": "object"
+        },
+        "row_count": {
+          "minimum": 1,
+          "title": "Row Count",
+          "type": "integer"
+        },
+        "split": {
+          "$ref": "#/$defs/RiskSplit"
+        }
+      },
+      "required": [
+        "split",
+        "row_count",
+        "group_count",
+        "label_counts"
+      ],
+      "title": "SplitPreprocessingSummary",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Reproducibility evidence for one derived classifier candidate dataset.",
+  "properties": {
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "development_largest_cluster_size": {
+      "minimum": 1,
+      "title": "Development Largest Cluster Size",
+      "type": "integer"
+    },
+    "development_multi_member_cluster_count": {
+      "minimum": 0,
+      "title": "Development Multi Member Cluster Count",
+      "type": "integer"
+    },
+    "development_near_duplicate_cluster_count": {
+      "minimum": 1,
+      "title": "Development Near Duplicate Cluster Count",
+      "type": "integer"
+    },
+    "output_dataset_path": {
+      "pattern": "^data/classifier/processed/[a-z0-9.-]+\\.json$",
+      "title": "Output Dataset Path",
+      "type": "string"
+    },
+    "output_dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Output Dataset Sha256",
+      "type": "string"
+    },
+    "report_id": {
+      "const": "deepshield-risk-classifier-preprocessing",
+      "default": "deepshield-risk-classifier-preprocessing",
+      "title": "Report Id",
+      "type": "string"
+    },
+    "report_version": {
+      "minimum": 1,
+      "title": "Report Version",
+      "type": "integer"
+    },
+    "rules": {
+      "$ref": "#/$defs/NormalizationRules"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_collection_path": {
+      "const": "data/classifier/source-collection.v1.json",
+      "title": "Source Collection Path",
+      "type": "string"
+    },
+    "source_collection_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Collection Sha256",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/SourcePreprocessingSummary"
+      },
+      "minItems": 2,
+      "title": "Sources",
+      "type": "array"
+    },
+    "splits": {
+      "items": {
+        "$ref": "#/$defs/SplitPreprocessingSummary"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "title": "Splits",
+      "type": "array"
+    }
+  },
+  "required": [
+    "report_version",
+    "created_at",
+    "source_collection_path",
+    "source_collection_sha256",
+    "output_dataset_path",
+    "output_dataset_sha256",
+    "rules",
+    "sources",
+    "splits",
+    "development_near_duplicate_cluster_count",
+    "development_multi_member_cluster_count",
+    "development_largest_cluster_size"
+  ],
+  "title": "ClassifierPreprocessingReport",
+  "type": "object"
+}

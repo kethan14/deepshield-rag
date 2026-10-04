@@ -304,8 +304,14 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli colle
   --output data/classifier/source-collection.v1.json --repository-root .
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-collection `
   data/classifier/source-collection.v1.json --repository-root . --require-files
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli preprocess `
+  data/classifier/source-collection.v1.json `
+  --output data/classifier/processed/risk-dataset.v1.json `
+  --report data/classifier/preprocessing-report.v1.json --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-preprocessing `
+  data/classifier/preprocessing-report.v1.json --repository-root . --require-dataset
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-dataset `
-  data/fixtures/risk-dataset.valid.json --repository-root .
+  data/classifier/processed/risk-dataset.v1.json --repository-root .
 ```
 
 The small committed fixture tests the contract only. It is not training data or a measured
@@ -328,7 +334,8 @@ backend/
 │       │   ├── cli.py
 │       │   ├── collection.py
 │       │   ├── manifest.py
-│       │   └── models.py
+│       │   ├── models.py
+│       │   └── preprocessing.py
 │       ├── corpus/
 │       │   ├── __init__.py
 │       │   ├── chunking.py
@@ -363,6 +370,7 @@ backend/
     ├── test_corpus_models.py
     ├── test_classifier_collection.py
     ├── test_classifier_data.py
+    ├── test_classifier_preprocessing.py
     ├── test_evaluation_manifest.py
     ├── test_evaluation_models.py
     ├── test_rag_baseline.py

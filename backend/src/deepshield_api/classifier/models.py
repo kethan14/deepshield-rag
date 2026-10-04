@@ -68,6 +68,150 @@ class ReviewStatus(StrEnum):
     APPROVED = "approved"
 
 
+class NormalizationRules(BaseModel):
+    """Frozen text and split rules used to derive classifier candidates."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rules_version: Literal["1.0"] = "1.0"
+    unicode_form: Literal["NFKC"] = "NFKC"
+    collapse_whitespace: Literal[True] = True
+    casefold_deduplication: Literal[True] = True
+    maximum_text_characters: Literal[8000] = 8000
+    near_duplicate_token_ngram_size: Literal[3] = 3
+    near_duplicate_jaccard_threshold: float = Field(default=0.82, gt=0, le=1)
+    development_split_seed: Literal["deepshield-c2-split-v1"] = "deepshield-c2-split-v1"
+    development_split_percentages: dict[RiskSplit, int] = Field(
+        default_factory=lambda: {
+            RiskSplit.TRAIN: 60,
+            RiskSplit.VALIDATION: 15,
+            RiskSplit.TEST: 25,
+        }
+    )
+
+    @field_validator("development_split_percentages")
+    @classmethod
+    def require_development_split_percentages(
+        cls, value: dict[RiskSplit, int]
+    ) -> dict[RiskSplit, int]:
+        if set(value) != {RiskSplit.TRAIN, RiskSplit.VALIDATION, RiskSplit.TEST}:
+            raise ValueError("development split percentages require train, validation, and test")
+        if any(percent <= 0 for percent in value.values()) or sum(value.values()) != 100:
+            raise ValueError("development split percentages must be positive and sum to 100")
+        return value
+
+
+class SourcePreprocessingSummary(BaseModel):
+    """Auditable row accounting for one registered classifier source."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    source_id: Slug
+    input_rows: int = Field(ge=1)
+    output_rows: int = Field(ge=0)
+    empty_rows_excluded: int = Field(ge=0)
+    too_short_rows_excluded: int = Field(ge=0)
+    overlength_rows_excluded: int = Field(ge=0)
+    duplicate_rows_excluded: int = Field(ge=0)
+    cross_source_exact_duplicates_excluded: int = Field(ge=0)
+    cross_source_near_duplicates_excluded: int = Field(ge=0)
+    output_label_counts: dict[RiskLabel, int]
+
+    @field_validator("output_label_counts")
+    @classmethod
+    def require_source_labels(cls, value: dict[RiskLabel, int]) -> dict[RiskLabel, int]:
+        if set(value) != set(RiskLabel) or any(count < 0 for count in value.values()):
+            raise ValueError("preprocessing source counts require both non-negative labels")
+        return value
+
+    @model_validator(mode="after")
+    def require_complete_row_accounting(self) -> Self:
+        excluded = (
+            self.empty_rows_excluded
+            + self.too_short_rows_excluded
+            + self.overlength_rows_excluded
+            + self.duplicate_rows_excluded
+            + self.cross_source_exact_duplicates_excluded
+            + self.cross_source_near_duplicates_excluded
+        )
+        if self.output_rows + excluded != self.input_rows:
+            raise ValueError("preprocessing source counts must account for every input row")
+        if sum(self.output_label_counts.values()) != self.output_rows:
+            raise ValueError("preprocessing label counts must sum to output rows")
+        return self
+
+
+class SplitPreprocessingSummary(BaseModel):
+    """Counts used to verify the derived split distribution."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    split: RiskSplit
+    row_count: int = Field(ge=1)
+    group_count: int = Field(ge=1)
+    label_counts: dict[RiskLabel, int]
+
+    @field_validator("label_counts")
+    @classmethod
+    def require_split_labels(cls, value: dict[RiskLabel, int]) -> dict[RiskLabel, int]:
+        if set(value) != set(RiskLabel) or any(count < 0 for count in value.values()):
+            raise ValueError("preprocessing split counts require both non-negative labels")
+        return value
+
+    @model_validator(mode="after")
+    def require_split_label_accounting(self) -> Self:
+        if sum(self.label_counts.values()) != self.row_count:
+            raise ValueError("preprocessing split label counts must sum to row count")
+        return self
+
+
+class ClassifierPreprocessingReport(BaseModel):
+    """Reproducibility evidence for one derived classifier candidate dataset."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    schema_version: Literal["1.0"] = "1.0"
+    report_id: Literal["deepshield-risk-classifier-preprocessing"] = (
+        "deepshield-risk-classifier-preprocessing"
+    )
+    report_version: int = Field(ge=1)
+    created_at: datetime
+    source_collection_path: Literal["data/classifier/source-collection.v1.json"]
+    source_collection_sha256: Sha256Digest
+    output_dataset_path: str = Field(pattern=r"^data/classifier/processed/[a-z0-9.-]+\.json$")
+    output_dataset_sha256: Sha256Digest
+    rules: NormalizationRules
+    sources: list[SourcePreprocessingSummary] = Field(min_length=2)
+    splits: list[SplitPreprocessingSummary] = Field(min_length=4, max_length=4)
+    development_near_duplicate_cluster_count: int = Field(ge=1)
+    development_multi_member_cluster_count: int = Field(ge=0)
+    development_largest_cluster_size: int = Field(ge=1)
+
+    @field_validator("created_at")
+    @classmethod
+    def require_preprocessing_timezone(cls, value: datetime) -> datetime:
+        if value.utcoffset() is None:
+            raise ValueError("created_at must include a timezone")
+        return value
+
+    @model_validator(mode="after")
+    def require_complete_preprocessing_report(self) -> Self:
+        source_ids = [source.source_id for source in self.sources]
+        if len(source_ids) != len(set(source_ids)):
+            raise ValueError("preprocessing report source IDs must be unique")
+        splits = [summary.split for summary in self.splits]
+        if set(splits) != set(RiskSplit) or len(splits) != len(set(splits)):
+            raise ValueError("preprocessing report requires each split exactly once")
+        output_rows = sum(source.output_rows for source in self.sources)
+        if sum(split.row_count for split in self.splits) != output_rows:
+            raise ValueError("preprocessing split counts must match source output rows")
+        if self.development_multi_member_cluster_count > (
+            self.development_near_duplicate_cluster_count
+        ):
+            raise ValueError("multi-member cluster count cannot exceed total cluster count")
+        return self
+
+
 class SourceColumns(BaseModel):
     """Upstream columns needed for deterministic normalization."""
 
