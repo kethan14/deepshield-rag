@@ -31,6 +31,7 @@ from deepshield_api.classifier.preprocessing import (
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 REGISTRY_PATH = REPOSITORY_ROOT / "data" / "classifier" / "source-registry.v2.json"
 REPORT_PATH = REPOSITORY_ROOT / "data" / "classifier" / "preprocessing-report.v1.json"
+REPORT_SCHEMA_PATH = REPOSITORY_ROOT / "data" / "classifier" / "preprocessing-report.schema.json"
 COLLECTED_AT = datetime(2026, 10, 4, 3, 0, tzinfo=UTC)
 
 
@@ -132,7 +133,18 @@ def test_committed_preprocessing_evidence_and_schema_are_current() -> None:
     validate_preprocessing_report(report, REPOSITORY_ROOT, require_dataset=False)
     assert sum(source.input_rows for source in report.sources) == 17_318
     assert sum(source.output_rows for source in report.sources) == 17_194
-    assert main(["schema", "preprocessing", "--check"]) == 0
+    assert (
+        main(
+            [
+                "schema",
+                "preprocessing",
+                "--output",
+                str(REPORT_SCHEMA_PATH),
+                "--check",
+            ]
+        )
+        == 0
+    )
 
 
 def test_preprocessing_accounts_for_rows_clusters_and_splits(tmp_path: Path) -> None:
