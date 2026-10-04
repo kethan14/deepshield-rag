@@ -1,4 +1,4 @@
-"""Runtime configuration and cached construction of the local C0 RAG service."""
+"""Runtime configuration and cached construction of C0 and C1 RAG services."""
 
 from functools import lru_cache
 from pathlib import Path
@@ -18,11 +18,12 @@ from deepshield_api.rag.generation import (
     OpenAICompatibleGenerator,
     ReasoningEffort,
 )
+from deepshield_api.rag.hardened import HardenedRagService
 from deepshield_api.rag.service import BaselineRagService
 
 
 class RagRuntimeError(RuntimeError):
-    """Raised when the C0 service cannot be configured from the local environment."""
+    """Raised when a RAG service cannot be configured from the local environment."""
 
 
 class RagSettings(BaseSettings):
@@ -72,6 +73,21 @@ def build_baseline_rag_service(settings: RagSettings | None = None) -> BaselineR
     """Build one reusable C0 service from validated server-side settings."""
 
     resolved = settings or RagSettings()
+    retriever, generator = _build_runtime_components(resolved)
+    return BaselineRagService(retriever, generator)
+
+
+def build_hardened_rag_service(settings: RagSettings | None = None) -> HardenedRagService:
+    """Build one reusable C1 service with the same retrieval and generation models as C0."""
+
+    resolved = settings or RagSettings()
+    retriever, generator = _build_runtime_components(resolved)
+    return HardenedRagService(retriever, generator)
+
+
+def _build_runtime_components(
+    resolved: RagSettings,
+) -> tuple[LocalCorpusRetriever, OpenAICompatibleGenerator]:
     if resolved.llm_model is None or not resolved.llm_model.strip():
         raise RagRuntimeError("DEEPSHIELD_LLM_MODEL is required to enable answer generation")
     generator = OpenAICompatibleGenerator(
@@ -91,7 +107,7 @@ def build_baseline_rag_service(settings: RagSettings | None = None) -> BaselineR
         raise
     except (IndexingError, OSError, ValueError) as exc:
         raise RagRuntimeError("unable to initialize the verified local retriever") from exc
-    return BaselineRagService(retriever, generator)
+    return retriever, generator
 
 
 @lru_cache(maxsize=1)
@@ -101,10 +117,23 @@ def get_baseline_rag_service() -> BaselineRagService:
     return build_baseline_rag_service()
 
 
+@lru_cache(maxsize=1)
+def get_hardened_rag_service() -> HardenedRagService:
+    """Reuse the C1 model and index resources instead of loading them per request."""
+
+    return build_hardened_rag_service()
+
+
 def clear_baseline_rag_service_cache() -> None:
     """Reset runtime state for tests or deliberate local configuration changes."""
 
     get_baseline_rag_service.cache_clear()
+
+
+def clear_hardened_rag_service_cache() -> None:
+    """Reset cached C1 runtime state for tests or configuration changes."""
+
+    get_hardened_rag_service.cache_clear()
 
 
 def _under_root(path: Path, root: Path) -> Path:

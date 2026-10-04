@@ -218,6 +218,38 @@ limit, comparison configurations, selection date, and price snapshot. A ChatGPT
 subscription is not an API credential, and no paid request is made merely by running the
 automated test suite.
 
+## Run the C1 hardened RAG API
+
+C1 uses the same retriever, generator snapshot, evidence count, and generation settings as
+C0 so the experiment changes the defense configuration rather than the underlying models.
+Submit the same request to the C1 route:
+
+```powershell
+$body = @{ question = "Can an F-1 student participate in CPT?"; top_k = 5 } |
+  ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/assistant/query/c1 `
+  -ContentType "application/json" -Body $body
+```
+
+The C1 pipeline applies deterministic, inspectable standard defenses at three checkpoints:
+
+1. Input rules block attack-only requests and mark risky portions of mixed policy requests.
+2. Retrieval rules exclude passages containing instruction-override patterns before those
+   passages can reach the generator.
+3. Output rules replace answers that expose protected canaries or policy markers, contain
+   unknown citations, or provide no valid citation.
+
+The response records the decision, sanitized guardrail events, excluded chunk IDs, safe
+retrieval evidence, citations, model identities, token usage, and a SHA-256 digest of any
+generated text that was blocked. Raw blocked output is not returned. Requests stopped before
+generation report no fabricated token usage and do not call the configured model.
+
+C1 deliberately contains only deterministic standard defenses. The learned risk classifier,
+broader synthetic-PII detection, and mock-tool authorization planned for C2 are not silently
+included here; keeping those layers separate makes the later ablation study meaningful. These
+rules reduce defined risks but do not prove that the system is secure against every phrasing or
+attack.
+
 ### Why this model was selected
 
 The development laptop has a 22-thread Intel Core Ultra 7 155H, 16 GB RAM, and integrated
@@ -278,8 +310,11 @@ backend/
 │       │   └── models.py
 │       └── rag/
 │           ├── __init__.py
+│           ├── evidence.py
 │           ├── experiment.py
 │           ├── generation.py
+│           ├── guardrails.py
+│           ├── hardened.py
 │           ├── models.py
 │           ├── router.py
 │           ├── runtime.py
@@ -295,6 +330,7 @@ backend/
     ├── test_evaluation_models.py
     ├── test_rag_baseline.py
     ├── test_rag_experiment.py
+    ├── test_rag_hardened.py
     └── test_health.py
 ```
 
