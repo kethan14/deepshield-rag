@@ -8,6 +8,7 @@ from typing import TypeVar
 from pydantic import BaseModel, ValidationError
 
 from deepshield_api.classifier.models import (
+    ClassifierCollectionReceipt,
     ClassifierSourceRegistry,
     RiskDatasetManifest,
     RiskSplit,
@@ -33,6 +34,12 @@ def load_risk_dataset(path: Path) -> RiskDatasetManifest:
     return _load_model(path, RiskDatasetManifest, "risk dataset")
 
 
+def load_collection_receipt(path: Path) -> ClassifierCollectionReceipt:
+    """Load a UTF-8 classifier source-collection receipt."""
+
+    return _load_model(path, ClassifierCollectionReceipt, "collection receipt")
+
+
 def render_source_registry_schema() -> str:
     """Return the canonical source-registry JSON Schema."""
 
@@ -45,6 +52,14 @@ def render_risk_dataset_schema() -> str:
     return json.dumps(RiskDatasetManifest.model_json_schema(), indent=2, sort_keys=True) + "\n"
 
 
+def render_collection_receipt_schema() -> str:
+    """Return the canonical classifier collection-receipt JSON Schema."""
+
+    return (
+        json.dumps(ClassifierCollectionReceipt.model_json_schema(), indent=2, sort_keys=True) + "\n"
+    )
+
+
 def render_source_registry(registry: ClassifierSourceRegistry) -> str:
     """Return a deterministic source-registry document."""
 
@@ -55,6 +70,12 @@ def render_risk_dataset(dataset: RiskDatasetManifest) -> str:
     """Return a deterministic classifier-dataset document."""
 
     return dataset.model_dump_json(indent=2) + "\n"
+
+
+def render_collection_receipt(receipt: ClassifierCollectionReceipt) -> str:
+    """Return a deterministic classifier collection receipt."""
+
+    return receipt.model_dump_json(indent=2) + "\n"
 
 
 def validate_dataset_references(dataset: RiskDatasetManifest, repository_root: Path) -> None:

@@ -5,7 +5,7 @@ classifier. Classifier data is deliberately separate from the 600-case C0/C1/C2 
 Benchmark prompts may be used only for the final system comparison, never for classifier
 training, model selection, threshold tuning, or feature design.
 
-## Version 1 source decision
+## Current source decision
 
 The frozen source registry selects two permissively licensed datasets for different purposes:
 
@@ -24,9 +24,27 @@ techniques are not sufficient for a general prompt-injection detector, and its l
 paired system-prompt context. It is useful as an external stress test precisely because it comes
 from a separate methodology.
 
-Both sources are pinned to immutable 40-character revisions. The registry also records their
-licenses, columns, label mappings, intended use, citations, limitations, and known LFS checksum.
-External files remain local and must not be committed without a separate redistribution review.
+Both sources are pinned to immutable 40-character revisions. Registry v2 records their licenses,
+columns, label mappings, intended use, citations, limitations, and the SHA-256 checksum of every
+selected file. It supersedes v1 because collection proved that SPML's real column is
+`Prompt injection`, not `Prompt Injection`; v1 remains committed as a transparent historical
+record. External files remain local and must not be committed without a redistribution review.
+
+## Verified source collection
+
+The collection receipt records evidence from the real pinned files without redistributing them:
+
+| Partition source | Files |   Rows | Empty prompt rows |
+| ---------------- | ----: | -----: | ----------------: |
+| Development      |     2 |  1,306 |                 0 |
+| External test    |     1 | 16,012 |                 1 |
+
+The single empty SPML user prompt is retained in the immutable raw download and recorded in the
+receipt. Deterministic preprocessing must exclude it and report that exclusion. Collection does
+not accept new sources: it downloads only registry-listed files at their exact revisions, checks
+size and SHA-256, parses CSV with strict headers and labels, verifies row totals, and refuses to
+overwrite changed local artifacts. Raw files live under ignored `data/classifier/raw/`; the
+committed receipt is `source-collection.v1.json`.
 
 ## Planned derived dataset
 
@@ -53,9 +71,15 @@ Run these from the repository root:
 
 ```powershell
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema sources --check
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema collection --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema dataset --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-sources `
-  data/classifier/source-registry.v1.json
+  data/classifier/source-registry.v2.json
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli collect-sources `
+  data/classifier/source-registry.v2.json `
+  --output data/classifier/source-collection.v1.json --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-collection `
+  data/classifier/source-collection.v1.json --repository-root . --require-files
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-dataset `
   data/fixtures/risk-dataset.valid.json --repository-root .
 ```

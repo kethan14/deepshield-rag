@@ -31,7 +31,7 @@ from deepshield_api.classifier.models import (
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-REGISTRY_PATH = REPOSITORY_ROOT / "data" / "classifier" / "source-registry.v1.json"
+REGISTRY_PATH = REPOSITORY_ROOT / "data" / "classifier" / "source-registry.v2.json"
 DATASET_FIXTURE = REPOSITORY_ROOT / "data" / "fixtures" / "risk-dataset.valid.json"
 
 

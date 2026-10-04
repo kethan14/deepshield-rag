@@ -42,6 +42,7 @@ __pycache__/
 .coverage
 htmlcov/
 .venv/
+.codex-sandbox-runtime/
 
 # Local environment variables and secrets
 

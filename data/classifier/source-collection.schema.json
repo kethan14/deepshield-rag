@@ -1,0 +1,141 @@
+{
+  "$defs": {
+    "CollectedClassifierFile": {
+      "additionalProperties": false,
+      "description": "Verified metadata for one locally collected classifier source file.",
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Columns",
+          "type": "array"
+        },
+        "dataset_id": {
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "empty_text_count": {
+          "minimum": 0,
+          "title": "Empty Text Count",
+          "type": "integer"
+        },
+        "label_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "minProperties": 2,
+          "title": "Label Counts",
+          "type": "object"
+        },
+        "raw_path": {
+          "minLength": 1,
+          "title": "Raw Path",
+          "type": "string"
+        },
+        "revision": {
+          "pattern": "^[a-f0-9]{40}$",
+          "title": "Revision",
+          "type": "string"
+        },
+        "row_count": {
+          "minimum": 1,
+          "title": "Row Count",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size_bytes": {
+          "minimum": 1,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "source_file": {
+          "minLength": 1,
+          "title": "Source File",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "title": "Source Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "dataset_id",
+        "revision",
+        "source_file",
+        "raw_path",
+        "sha256",
+        "size_bytes",
+        "row_count",
+        "columns",
+        "label_counts",
+        "empty_text_count"
+      ],
+      "title": "CollectedClassifierFile",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Versioned evidence for locally collected, immutable classifier source files.",
+  "properties": {
+    "collected_at": {
+      "format": "date-time",
+      "title": "Collected At",
+      "type": "string"
+    },
+    "collection_id": {
+      "const": "deepshield-risk-classifier-source-collection",
+      "default": "deepshield-risk-classifier-source-collection",
+      "title": "Collection Id",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/CollectedClassifierFile"
+      },
+      "minItems": 1,
+      "title": "Files",
+      "type": "array"
+    },
+    "receipt_version": {
+      "minimum": 1,
+      "title": "Receipt Version",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_registry_path": {
+      "const": "data/classifier/source-registry.v2.json",
+      "title": "Source Registry Path",
+      "type": "string"
+    },
+    "source_registry_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Registry Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "receipt_version",
+    "collected_at",
+    "source_registry_path",
+    "source_registry_sha256",
+    "files"
+  ],
+  "title": "ClassifierCollectionReceipt",
+  "type": "object"
+}

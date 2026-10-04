@@ -239,7 +239,7 @@
       "type": "string"
     },
     "source_registry_path": {
-      "const": "data/classifier/source-registry.v1.json",
+      "const": "data/classifier/source-registry.v2.json",
       "title": "Source Registry Path",
       "type": "string"
     },
