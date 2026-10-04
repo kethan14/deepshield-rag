@@ -9,6 +9,7 @@ from pydantic import BaseModel, ValidationError
 
 from deepshield_api.classifier.models import (
     ClassifierCollectionReceipt,
+    ClassifierPreprocessingReport,
     ClassifierSourceRegistry,
     RiskDatasetManifest,
     RiskSplit,
@@ -38,6 +39,12 @@ def load_collection_receipt(path: Path) -> ClassifierCollectionReceipt:
     """Load a UTF-8 classifier source-collection receipt."""
 
     return _load_model(path, ClassifierCollectionReceipt, "collection receipt")
+
+
+def load_preprocessing_report(path: Path) -> ClassifierPreprocessingReport:
+    """Load a UTF-8 classifier preprocessing report."""
+
+    return _load_model(path, ClassifierPreprocessingReport, "preprocessing report")
 
 
 def render_source_registry_schema() -> str:

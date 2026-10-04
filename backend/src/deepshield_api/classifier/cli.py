@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Literal
 
 from deepshield_api.classifier.collection import (
@@ -13,6 +13,7 @@ from deepshield_api.classifier.collection import (
 from deepshield_api.classifier.manifest import (
     ClassifierManifestError,
     load_collection_receipt,
+    load_preprocessing_report,
     load_risk_dataset,
     load_source_registry,
     render_collection_receipt,
@@ -22,11 +23,19 @@ from deepshield_api.classifier.manifest import (
     validate_dataset_references,
 )
 from deepshield_api.classifier.models import ArtifactStatus
+from deepshield_api.classifier.preprocessing import (
+    ClassifierPreprocessingError,
+    preprocess_classifier_sources,
+    render_preprocessing_report_schema,
+    validate_preprocessing_report,
+    write_preprocessing_result,
+)
 
 SCHEMA_PATHS = {
     "collection": Path("data/classifier/source-collection.schema.json"),
     "sources": Path("data/classifier/source-registry.schema.json"),
     "dataset": Path("data/classifier/risk-dataset.schema.json"),
+    "preprocessing": Path("data/classifier/preprocessing-report.schema.json"),
 }
 
 
@@ -57,6 +66,31 @@ def build_parser() -> argparse.ArgumentParser:
     receipt.add_argument("receipt", type=Path)
     receipt.add_argument("--repository-root", type=Path, default=Path.cwd())
     receipt.add_argument("--require-files", action="store_true")
+
+    preprocess = subparsers.add_parser(
+        "preprocess",
+        help="Normalize, deduplicate, group, and split collected classifier sources.",
+    )
+    preprocess.add_argument("collection", type=Path)
+    preprocess.add_argument(
+        "--output",
+        type=Path,
+        default=Path("data/classifier/processed/risk-dataset.v1.json"),
+    )
+    preprocess.add_argument(
+        "--report",
+        type=Path,
+        default=Path("data/classifier/preprocessing-report.v1.json"),
+    )
+    preprocess.add_argument("--repository-root", type=Path, default=Path.cwd())
+
+    preprocessing_report = subparsers.add_parser(
+        "validate-preprocessing",
+        help="Validate a classifier preprocessing report and its checksums.",
+    )
+    preprocessing_report.add_argument("report", type=Path)
+    preprocessing_report.add_argument("--repository-root", type=Path, default=Path.cwd())
+    preprocessing_report.add_argument("--require-dataset", action="store_true")
 
     dataset = subparsers.add_parser("validate-dataset", help="Validate a classifier dataset.")
     dataset.add_argument("dataset", type=Path)
@@ -111,6 +145,31 @@ def main(argv: list[str] | None = None) -> int:
                 f"with {len(receipt.files)} files."
             )
             return 0
+        if args.command == "preprocess":
+            output_path = PurePosixPath(args.output.as_posix())
+            result = preprocess_classifier_sources(
+                args.collection,
+                args.repository_root,
+                output_dataset_path=output_path,
+            )
+            write_preprocessing_result(result, args.repository_root, args.report)
+            print(
+                f"Preprocessed {len(result.dataset.examples)} classifier candidates into "
+                f"{args.output}; audit report: {args.report}"
+            )
+            return 0
+        if args.command == "validate-preprocessing":
+            report = load_preprocessing_report(args.report)
+            validate_preprocessing_report(
+                report,
+                args.repository_root,
+                require_dataset=args.require_dataset,
+            )
+            print(
+                f"Validated classifier preprocessing report version {report.report_version} "
+                f"for {sum(source.output_rows for source in report.sources)} candidates."
+            )
+            return 0
         dataset = load_risk_dataset(args.dataset)
         validate_dataset_references(dataset, args.repository_root)
         if args.require_frozen and dataset.status is not ArtifactStatus.FROZEN:
@@ -121,17 +180,24 @@ def main(argv: list[str] | None = None) -> int:
             f"{dataset.dataset_version} with {len(dataset.examples)} examples."
         )
         return 0
-    except (ClassifierCollectionError, ClassifierManifestError) as exc:
+    except (
+        ClassifierCollectionError,
+        ClassifierManifestError,
+        ClassifierPreprocessingError,
+    ) as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
 
 def _handle_schema(
-    kind: Literal["collection", "dataset", "sources"], output: Path | None, check: bool
+    kind: Literal["collection", "dataset", "preprocessing", "sources"],
+    output: Path | None,
+    check: bool,
 ) -> int:
     renderers = {
         "collection": render_collection_receipt_schema,
         "dataset": render_risk_dataset_schema,
+        "preprocessing": render_preprocessing_report_schema,
         "sources": render_source_registry_schema,
     }
     rendered = renderers[kind]()

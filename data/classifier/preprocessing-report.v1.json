@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.0",
+  "report_id": "deepshield-risk-classifier-preprocessing",
+  "report_version": 1,
+  "created_at": "2026-10-04T02:40:57.750085Z",
+  "source_collection_path": "data/classifier/source-collection.v1.json",
+  "source_collection_sha256": "bdbfd7eb5138b771360a0463cdabfc8e8d6ea8cd86a68985e2edc6fe67e1fab2",
+  "output_dataset_path": "data/classifier/processed/risk-dataset.v1.json",
+  "output_dataset_sha256": "69bab48103ee256245238f76e052b4a84ef18c9ea8974fd649c06c99af5cb9cd",
+  "rules": {
+    "rules_version": "1.0",
+    "unicode_form": "NFKC",
+    "collapse_whitespace": true,
+    "casefold_deduplication": true,
+    "maximum_text_characters": 8000,
+    "near_duplicate_token_ngram_size": 3,
+    "near_duplicate_jaccard_threshold": 0.82,
+    "development_split_seed": "deepshield-c2-split-v1",
+    "development_split_percentages": {
+      "train": 60,
+      "validation": 15,
+      "test": 25
+    }
+  },
+  "sources": [
+    {
+      "source_id": "jackhhao-jailbreak-classification",
+      "input_rows": 1306,
+      "output_rows": 1281,
+      "empty_rows_excluded": 0,
+      "too_short_rows_excluded": 0,
+      "overlength_rows_excluded": 5,
+      "duplicate_rows_excluded": 20,
+      "cross_source_exact_duplicates_excluded": 0,
+      "cross_source_near_duplicates_excluded": 0,
+      "output_label_counts": {
+        "benign": 637,
+        "adversarial": 644
+      }
+    },
+    {
+      "source_id": "spml-contextual-prompt-injection",
+      "input_rows": 16012,
+      "output_rows": 15913,
+      "empty_rows_excluded": 1,
+      "too_short_rows_excluded": 0,
+      "overlength_rows_excluded": 0,
+      "duplicate_rows_excluded": 98,
+      "cross_source_exact_duplicates_excluded": 0,
+      "cross_source_near_duplicates_excluded": 0,
+      "output_label_counts": {
+        "benign": 3372,
+        "adversarial": 12541
+      }
+    }
+  ],
+  "splits": [
+    {
+      "split": "train",
+      "row_count": 760,
+      "group_count": 697,
+      "label_counts": {
+        "benign": 365,
+        "adversarial": 395
+      }
+    },
+    {
+      "split": "validation",
+      "row_count": 197,
+      "group_count": 185,
+      "label_counts": {
+        "benign": 109,
+        "adversarial": 88
+      }
+    },
+    {
+      "split": "test",
+      "row_count": 324,
+      "group_count": 302,
+      "label_counts": {
+        "benign": 163,
+        "adversarial": 161
+      }
+    },
+    {
+      "split": "external-test",
+      "row_count": 15913,
+      "group_count": 15913,
+      "label_counts": {
+        "benign": 3372,
+        "adversarial": 12541
+      }
+    }
+  ],
+  "development_near_duplicate_cluster_count": 1184,
+  "development_multi_member_cluster_count": 54,
+  "development_largest_cluster_size": 12
+}

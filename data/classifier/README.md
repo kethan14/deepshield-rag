@@ -46,7 +46,7 @@ size and SHA-256, parses CSV with strict headers and labels, verifies row totals
 overwrite changed local artifacts. Raw files live under ignored `data/classifier/raw/`; the
 committed receipt is `source-collection.v1.json`.
 
-## Planned derived dataset
+## Derived candidate dataset
 
 The project artifact uses four partitions:
 
@@ -62,8 +62,38 @@ reference the frozen source-registry checksum, and record a checksum proving tha
 were excluded. The contract also requires at least 1,000 reviewed examples: 500 train, 100
 validation, 200 internal test, and 200 external test.
 
-These checks prevent exact and group leakage. Near-duplicate clustering and label quality still
-require measured review; schema validation alone is not evidence that the classifier works.
+These checks prevent exact and group leakage. The measured quality of near-duplicate clusters and
+upstream labels still requires human review; schema validation alone is not evidence that the
+classifier works.
+
+Preprocessing version 1 deterministically applies NFKC Unicode normalization, whitespace
+collapse, case-insensitive exact deduplication, an 8,000-character safety limit, and token
+trigram near-duplicate detection at Jaccard similarity `0.82`. Development examples are grouped
+before a seeded `60% / 15% / 25%` train/validation/test assignment. The full SPML source remains
+external-test only. External rows matching development data exactly or at the same near-duplicate
+threshold are excluded before evaluation.
+
+The verified run transformed 17,318 collected rows into 17,194 draft candidates:
+
+| Split         |   Rows | Groups | Benign | Adversarial |
+| ------------- | -----: | -----: | -----: | ----------: |
+| Train         |    760 |    697 |    365 |         395 |
+| Validation    |    197 |    185 |    109 |          88 |
+| Test          |    324 |    302 |    163 |         161 |
+| External test | 15,913 | 15,913 |  3,372 |      12,541 |
+
+The run excluded one empty row, five rows beyond the declared length limit, and 118 exact
+duplicates. It found no exact or threshold-level near-duplicate overlap between development and
+external-test data. The 1,281 retained development examples formed 1,184 groups; 54 groups had
+multiple members and the largest contained 12 prompts. These are preprocessing measurements, not
+classifier-performance results. The external split is naturally imbalanced, so later evaluation
+must report macro metrics and per-class results rather than accuracy alone.
+
+The 21.7 MB candidate dataset remains local at
+`data/classifier/processed/risk-dataset.v1.json`. Its checksum and all aggregate evidence are
+committed in `preprocessing-report.v1.json`; the JSON Schema is
+`preprocessing-report.schema.json`. Candidates remain `draft`. Human review and explicit
+benchmark-exclusion evidence are still required before a smaller training artifact can be frozen.
 
 ## Commands
 
@@ -73,6 +103,7 @@ Run these from the repository root:
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema sources --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema collection --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema dataset --check
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema preprocessing --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-sources `
   data/classifier/source-registry.v2.json
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli collect-sources `
@@ -80,8 +111,14 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli colle
   --output data/classifier/source-collection.v1.json --repository-root .
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-collection `
   data/classifier/source-collection.v1.json --repository-root . --require-files
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli preprocess `
+  data/classifier/source-collection.v1.json `
+  --output data/classifier/processed/risk-dataset.v1.json `
+  --report data/classifier/preprocessing-report.v1.json --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-preprocessing `
+  data/classifier/preprocessing-report.v1.json --repository-root . --require-dataset
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-dataset `
-  data/fixtures/risk-dataset.valid.json --repository-root .
+  data/classifier/processed/risk-dataset.v1.json --repository-root .
 ```
 
 The committed dataset fixture validates only the format. It is synthetic, is not classifier
