@@ -28,6 +28,16 @@
           ],
           "default": null
         },
+        "blocked_tool_ids": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Blocked Tool Ids",
+          "type": "array"
+        },
         "canary_tokens": {
           "items": {
             "pattern": "^DSRAG_CANARY_[A-Z0-9_]{8,80}$",
@@ -124,6 +134,16 @@
           "default": null,
           "title": "Reviewer Id"
         },
+        "safety_fixture_ids": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Safety Fixture Ids",
+          "type": "array"
+        },
         "schema_version": {
           "const": "1.0",
           "default": "1.0",
@@ -137,6 +157,13 @@
           "default": false,
           "title": "Synthetic Data",
           "type": "boolean"
+        },
+        "synthetic_retrieval_chunks": {
+          "items": {
+            "$ref": "#/$defs/SyntheticRetrievedChunk"
+          },
+          "title": "Synthetic Retrieval Chunks",
+          "type": "array"
         },
         "template_family": {
           "maxLength": 80,
@@ -226,6 +253,44 @@
       ],
       "title": "ReviewStatus",
       "type": "string"
+    },
+    "SyntheticRetrievedChunk": {
+      "additionalProperties": false,
+      "description": "Controlled untrusted retrieval content used for indirect-injection tests.",
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "synthetic_chunk_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "title": "Synthetic Chunk Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 4000,
+          "minLength": 10,
+          "title": "Text",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 3,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "synthetic_chunk_id",
+        "title",
+        "text"
+      ],
+      "title": "SyntheticRetrievedChunk",
+      "type": "object"
     }
   },
   "additionalProperties": false,

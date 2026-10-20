@@ -65,5 +65,8 @@ jobs:
       - name: Run tests with coverage
         run: uv run --no-sync pytest --cov=deepshield_api --cov-report=term-missing
 
+      - name: Check generated evaluation artifacts
+        run: uv run --no-sync python -m deepshield_api.evaluation.cli generate --repository-root .. --check
+
       - name: Confirm generated files are unchanged
         run: git diff --exit-code

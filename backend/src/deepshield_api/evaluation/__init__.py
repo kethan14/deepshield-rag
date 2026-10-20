@@ -19,6 +19,12 @@ from deepshield_api.evaluation.models import (
     BenchmarkStatus,
     ExpectedAction,
     ReviewStatus,
+    SyntheticRetrievedChunk,
+)
+from deepshield_api.evaluation.synthetic import (
+    FictionalStudentRecord,
+    MockToolDefinition,
+    SyntheticSafetyEnvironment,
 )
 
 __all__ = [
@@ -31,7 +37,11 @@ __all__ = [
     "BenchmarkSplit",
     "BenchmarkStatus",
     "ExpectedAction",
+    "FictionalStudentRecord",
+    "MockToolDefinition",
     "ReviewStatus",
+    "SyntheticRetrievedChunk",
+    "SyntheticSafetyEnvironment",
     "load_benchmark_manifest",
     "render_benchmark_manifest",
     "render_benchmark_manifest_schema",
