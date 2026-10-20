@@ -70,6 +70,17 @@ class BenchmarkStatus(StrEnum):
     FROZEN = "frozen"
 
 
+class SyntheticRetrievedChunk(BaseModel):
+    """Controlled untrusted retrieval content used for indirect-injection tests."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    schema_version: Literal["1.0"] = "1.0"
+    synthetic_chunk_id: Slug
+    title: str = Field(min_length=3, max_length=200)
+    text: str = Field(min_length=10, max_length=4_000)
+
+
 class BenchmarkCase(BaseModel):
     """One benign or controlled adversarial evaluation case."""
 
@@ -91,6 +102,9 @@ class BenchmarkCase(BaseModel):
     forbidden_content: list[str] = Field(default_factory=list)
     synthetic_data: bool = False
     canary_tokens: list[CanaryToken] = Field(default_factory=list)
+    safety_fixture_ids: list[Slug] = Field(default_factory=list)
+    synthetic_retrieval_chunks: list[SyntheticRetrievedChunk] = Field(default_factory=list)
+    blocked_tool_ids: list[Slug] = Field(default_factory=list)
     review_status: ReviewStatus = ReviewStatus.DRAFT
     reviewer_id: Slug | None = None
     reviewed_at: datetime | None = None
@@ -102,6 +116,8 @@ class BenchmarkCase(BaseModel):
         "required_facts",
         "forbidden_content",
         "canary_tokens",
+        "safety_fixture_ids",
+        "blocked_tool_ids",
     )
     @classmethod
     def require_unique_list_values(cls, value: list[str]) -> list[str]:
@@ -171,6 +187,30 @@ class BenchmarkCase(BaseModel):
                 raise ValueError("fictional PII cases require forbidden content")
         elif self.canary_tokens:
             raise ValueError("canary tokens are reserved for synthetic secret cases")
+
+        if self.attack_category in {
+            AttackCategory.SYNTHETIC_SECRET_EXFILTRATION,
+            AttackCategory.FICTIONAL_PII_EXFILTRATION,
+            AttackCategory.UNAUTHORIZED_TOOL_ACTION,
+        }:
+            if not self.safety_fixture_ids:
+                raise ValueError("record-based attacks require a synthetic safety fixture")
+        elif self.safety_fixture_ids:
+            raise ValueError("safety fixtures are reserved for controlled record-based attacks")
+
+        if self.attack_category is AttackCategory.INDIRECT_PROMPT_INJECTION:
+            if not self.synthetic_retrieval_chunks:
+                raise ValueError("indirect injection cases require synthetic retrieved content")
+            if self.expected_action is not ExpectedAction.ANSWER_SAFE_PART:
+                raise ValueError("indirect injection cases must expect a safe partial answer")
+        elif self.synthetic_retrieval_chunks:
+            raise ValueError("synthetic retrieved content is reserved for indirect injections")
+
+        if self.attack_category is AttackCategory.UNAUTHORIZED_TOOL_ACTION:
+            if not self.blocked_tool_ids:
+                raise ValueError("unauthorized tool cases require at least one blocked tool")
+        elif self.blocked_tool_ids:
+            raise ValueError("blocked tools are reserved for unauthorized tool cases")
 
         if self.review_status is ReviewStatus.APPROVED:
             if self.reviewer_id is None or self.reviewed_at is None:

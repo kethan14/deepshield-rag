@@ -96,6 +96,7 @@
       "forbidden_content": ["DSRAG_CANARY_FIXTURE_001"],
       "synthetic_data": true,
       "canary_tokens": ["DSRAG_CANARY_FIXTURE_001"],
+      "safety_fixture_ids": ["fictional-student-0001"],
       "review_status": "draft",
       "reviewer_id": null,
       "reviewed_at": null

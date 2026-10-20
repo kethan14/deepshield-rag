@@ -1,0 +1,35 @@
+{
+  "attack_category_counts": {
+    "direct-prompt-injection": 50,
+    "fictional-pii-exfiltration": 50,
+    "indirect-prompt-injection": 50,
+    "synthetic-secret-exfiltration": 50,
+    "system-prompt-extraction": 50,
+    "unauthorized-tool-action": 50
+  },
+  "benchmark_id": "deepshield-rag-f1-security",
+  "created_at": "2026-10-20T12:00:00Z",
+  "difficulty_counts": {
+    "easy": 199,
+    "hard": 185,
+    "medium": 216
+  },
+  "issue_count": 0,
+  "issues": [],
+  "manifest_version": 1,
+  "maximum_cross_split_pair": [
+    "adversarial-development-indirect-prompt-injection-012",
+    "adversarial-test-indirect-prompt-injection-004"
+  ],
+  "maximum_cross_split_similarity": 0.529412,
+  "near_duplicate_threshold": 0.82,
+  "passed": true,
+  "schema_version": "1.0",
+  "split_kind_counts": {
+    "development:adversarial": 100,
+    "development:benign": 100,
+    "test:adversarial": 200,
+    "test:benign": 200
+  },
+  "total_cases": 600
+}

@@ -1,8 +1,30 @@
 # DeepShield-RAG Evaluation Benchmark
 
-This directory holds version-controlled, human-reviewed benchmark records. Generated model
-outputs and run logs belong in ignored local artifacts until their contents and size have been
-reviewed.
+This directory holds version-controlled benchmark drafts, review packets, and eventually frozen
+human-reviewed records. Generated model outputs and run logs belong in ignored local artifacts
+until their contents and size have been reviewed.
+
+## Current version 1 status
+
+`f1-security-benchmark.v1.json` is a deterministic **draft** containing the complete 600-case
+study design. It is not yet a frozen result. Its companion artifacts are:
+
+- `synthetic-safety-environment.v1.json`: 24 explicitly fictional student records, unique
+  canaries, and four inert mock-tool definitions. Addresses use the reserved `example.test`
+  domain, phone numbers use the fictional 555 range, and no tool is executable.
+- `f1-security-benchmark-audit.v1.json`: reproducible balance, fixture-integrity, secret-exposure,
+  and development/test near-duplicate checks.
+- `f1-security-benchmark-review.v1.csv`: a 600-row review packet with blank decision and notes
+  columns. It intentionally omits the actual forbidden secret values.
+
+The generated draft contains 300 benign and 300 adversarial cases. Every benign and safe-part
+case points to an exact chunk in the frozen official corpus. Each of the six threat categories
+contains 50 cases. Human review of wording, evidence labels, difficulty, and near-duplicate
+judgment is still required before any case is marked approved and the manifest is frozen.
+The benign set uses 17 development and 34 test evidence families; related paraphrases retain a
+shared `template_family`. Later confidence intervals and significance tests must account for
+these families (for example, by cluster bootstrap) instead of treating every paraphrase as an
+independent policy fact.
 
 ## Frozen study design
 
@@ -54,6 +76,11 @@ Automated validation prevents:
 Near-duplicate detection and factual labels still require human review; schema validation alone
 does not prove benchmark quality.
 
+The automated audit compares the complete model input, including synthetic poisoned retrieval
+text, across development and test partitions using token-set Jaccard similarity. Version 1 uses a
+conservative rejection threshold of `0.82`. Passing that automated threshold is evidence against
+obvious leakage, not a replacement for reviewer judgment.
+
 ## Commands
 
 Run these from the repository root.
@@ -70,6 +97,21 @@ Check for schema drift:
 uv run --project backend --no-sync python -m deepshield_api.evaluation.cli schema --check
 ```
 
+Check that the committed benchmark, safety environment, audit, and review packet exactly match
+the deterministic generator:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli generate `
+  --repository-root . --check
+```
+
+Re-run the composition, fixture-integrity, exposure, and cross-split leakage audit:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli audit `
+  --repository-root . --check
+```
+
 Validate the small synthetic format fixture and its corpus references:
 
 ```powershell
@@ -78,8 +120,9 @@ uv run --project backend --no-sync python -m deepshield_api.evaluation.cli valid
 ```
 
 The fixture demonstrates the format only. It is not part of the 600-prompt benchmark and must
-not be reported as an experimental result. Final experiment runners will require a benchmark
-whose status is `frozen`:
+not be reported as an experimental result. The generated 600-case version 1 artifact is also a
+draft and must not be reported as final performance data. Final experiment runners will require
+a benchmark whose status is `frozen`:
 
 ```powershell
 uv run --project backend --no-sync python -m deepshield_api.evaluation.cli validate `

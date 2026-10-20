@@ -5,16 +5,40 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from deepshield_api.evaluation.audit import (
+    audit_benchmark,
+    render_audit_report,
+    render_review_csv,
+    write_text_artifact,
+)
+from deepshield_api.evaluation.generation import build_draft_benchmark
 from deepshield_api.evaluation.manifest import (
     BenchmarkManifestError,
     load_benchmark_manifest,
+    render_benchmark_manifest,
     render_benchmark_manifest_schema,
     validate_corpus_references,
+    write_benchmark_manifest,
     write_benchmark_manifest_schema,
 )
 from deepshield_api.evaluation.models import BenchmarkStatus
+from deepshield_api.evaluation.synthetic import (
+    SyntheticEnvironmentError,
+    build_synthetic_environment,
+    load_synthetic_environment,
+    render_synthetic_environment,
+    write_synthetic_environment,
+)
 
 DEFAULT_SCHEMA_PATH = Path("data/evaluation/benchmark-manifest.schema.json")
+DEFAULT_BENCHMARK_PATH = Path("data/evaluation/f1-security-benchmark.v1.json")
+DEFAULT_ENVIRONMENT_PATH = Path("data/evaluation/synthetic-safety-environment.v1.json")
+DEFAULT_AUDIT_PATH = Path("data/evaluation/f1-security-benchmark-audit.v1.json")
+DEFAULT_REVIEW_PATH = Path("data/evaluation/f1-security-benchmark-review.v1.csv")
+
+
+def _resolve_from_root(path: Path, repository_root: Path) -> Path:
+    return path if path.is_absolute() else repository_root / path
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -26,6 +50,27 @@ def build_parser() -> argparse.ArgumentParser:
     schema_parser = subparsers.add_parser("schema", help="Export the benchmark schema.")
     schema_parser.add_argument("--output", type=Path, default=DEFAULT_SCHEMA_PATH)
     schema_parser.add_argument("--check", action="store_true")
+
+    generate_parser = subparsers.add_parser(
+        "generate", help="Generate the deterministic draft benchmark and safety fixtures."
+    )
+    generate_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    generate_parser.add_argument("--benchmark-output", type=Path, default=DEFAULT_BENCHMARK_PATH)
+    generate_parser.add_argument(
+        "--environment-output", type=Path, default=DEFAULT_ENVIRONMENT_PATH
+    )
+    generate_parser.add_argument("--audit-output", type=Path, default=DEFAULT_AUDIT_PATH)
+    generate_parser.add_argument("--review-output", type=Path, default=DEFAULT_REVIEW_PATH)
+    generate_parser.add_argument("--check", action="store_true")
+
+    audit_parser = subparsers.add_parser(
+        "audit", help="Audit a generated benchmark and its synthetic environment."
+    )
+    audit_parser.add_argument("benchmark", type=Path, nargs="?", default=DEFAULT_BENCHMARK_PATH)
+    audit_parser.add_argument("--environment", type=Path, default=DEFAULT_ENVIRONMENT_PATH)
+    audit_parser.add_argument("--output", type=Path, default=DEFAULT_AUDIT_PATH)
+    audit_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    audit_parser.add_argument("--check", action="store_true")
 
     validate_parser = subparsers.add_parser("validate", help="Validate a benchmark manifest.")
     validate_parser.add_argument("manifest", type=Path)
@@ -53,6 +98,114 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         write_benchmark_manifest_schema(output)
         print(f"Wrote schema: {output}")
+        return 0
+
+    if args.command == "generate":
+        repository_root = Path(args.repository_root).resolve()
+        try:
+            environment = build_synthetic_environment()
+            manifest = build_draft_benchmark(repository_root, environment)
+            validate_corpus_references(manifest, repository_root)
+            audit = audit_benchmark(manifest, environment)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        if not audit.passed:
+            print(
+                f"generated benchmark failed audit with {audit.issue_count} issue(s)",
+                file=sys.stderr,
+            )
+            return 1
+        artifacts = {
+            _resolve_from_root(Path(args.benchmark_output), repository_root): (
+                render_benchmark_manifest(manifest)
+            ),
+            _resolve_from_root(Path(args.environment_output), repository_root): (
+                render_synthetic_environment(environment)
+            ),
+            _resolve_from_root(Path(args.audit_output), repository_root): (
+                render_audit_report(audit)
+            ),
+            _resolve_from_root(Path(args.review_output), repository_root): (
+                render_review_csv(manifest)
+            ),
+        }
+        if args.check:
+            stale = [
+                path
+                for path, expected in artifacts.items()
+                if not path.is_file() or path.read_text(encoding="utf-8") != expected
+            ]
+            if stale:
+                print(
+                    "Generated evaluation artifacts are missing or out of date: "
+                    + ", ".join(str(path) for path in stale),
+                    file=sys.stderr,
+                )
+                return 1
+            print("Generated evaluation artifacts are current.")
+            return 0
+        existing = [path for path in artifacts if path.exists()]
+        if existing:
+            print(
+                "Refusing to replace existing generated artifacts: "
+                + ", ".join(str(path) for path in existing),
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            write_benchmark_manifest(
+                _resolve_from_root(Path(args.benchmark_output), repository_root), manifest
+            )
+            write_synthetic_environment(
+                _resolve_from_root(Path(args.environment_output), repository_root), environment
+            )
+            write_text_artifact(
+                _resolve_from_root(Path(args.audit_output), repository_root),
+                render_audit_report(audit),
+            )
+            write_text_artifact(
+                _resolve_from_root(Path(args.review_output), repository_root),
+                render_review_csv(manifest),
+            )
+        except (BenchmarkManifestError, SyntheticEnvironmentError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(
+            f"Generated {len(manifest.cases)} draft cases, {len(environment.records)} "
+            f"fictional records, and {len(environment.tools)} inert mock tools."
+        )
+        return 0
+
+    if args.command == "audit":
+        repository_root = Path(args.repository_root).resolve()
+        benchmark_path = _resolve_from_root(Path(args.benchmark), repository_root)
+        environment_path = _resolve_from_root(Path(args.environment), repository_root)
+        try:
+            manifest = load_benchmark_manifest(benchmark_path)
+            environment = load_synthetic_environment(environment_path)
+            validate_corpus_references(manifest, repository_root)
+        except (BenchmarkManifestError, SyntheticEnvironmentError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        report = audit_benchmark(manifest, environment)
+        expected = render_audit_report(report)
+        output = _resolve_from_root(Path(args.output), repository_root)
+        if args.check and (not output.is_file() or output.read_text(encoding="utf-8") != expected):
+            print(f"Benchmark audit report is missing or out of date: {output}", file=sys.stderr)
+            return 1
+        if not args.check:
+            if output.exists():
+                output.write_text(expected, encoding="utf-8", newline="\n")
+            else:
+                write_text_artifact(output, expected)
+        if not report.passed:
+            print(f"Benchmark audit failed with {report.issue_count} issue(s).", file=sys.stderr)
+            return 1
+        print(
+            f"Benchmark audit passed for {report.total_cases} cases; maximum cross-split "
+            f"similarity {report.maximum_cross_split_similarity:.4f}."
+        )
         return 0
 
     try:
