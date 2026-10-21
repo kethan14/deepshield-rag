@@ -65,6 +65,7 @@ jobs:
       - name: Confirm classifier selection contract and evidence
         run: |
           uv run --no-sync python -m deepshield_api.classifier.cli schema selection --check --output ../data/classifier/selection-report.schema.json
+          uv run --no-sync python -m deepshield_api.classifier.cli schema review --check --output ../data/classifier/review-report.schema.json
           uv run --no-sync python -m deepshield_api.classifier.cli validate-selection ../data/classifier/selection-report.v1.json --repository-root ..
 
       - name: Run tests with coverage

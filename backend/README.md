@@ -299,6 +299,7 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli schem
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema dataset --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema preprocessing --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema selection --check
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema review --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-sources `
   data/classifier/source-registry.v2.json
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli collect-sources `
@@ -322,6 +323,10 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli prepa
   --repository-root .
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli audit-review `
   data/classifier/processed/risk-dataset-human-review.v1.csv --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli freeze-review `
+  --repository-root . --report data/classifier/review-report.v1.json
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-review `
+  data/classifier/review-report.v1.json --repository-root . --require-artifacts
 ```
 
 The small committed fixture tests the contract only. It is not training data or a measured
@@ -344,6 +349,12 @@ reports progress without changing the dataset. Add `--require-complete` only whe
 reviewer has finished every row. Neither command marks examples approved or freezes training
 data; that remains a later explicit step.
 
+Once every row has a genuine decision, `freeze-review` applies approved and corrected labels,
+omits explicitly excluded rows, marks retained examples approved, and writes a checksummed review
+report. It fails if any row is pending, evidence changed, or exclusions leave the registered
+1,000-example/split minimums unmet. The current worksheet is still entirely pending, so the
+project has not created or claimed a frozen training dataset.
+
 ## Project structure
 
 ```text
@@ -358,6 +369,7 @@ backend/
 │       │   ├── __init__.py
 │       │   ├── cli.py
 │       │   ├── collection.py
+│       │   ├── freezing.py
 │       │   ├── manifest.py
 │       │   ├── models.py
 │       │   ├── preprocessing.py
@@ -397,6 +409,7 @@ backend/
     ├── test_corpus_models.py
     ├── test_classifier_collection.py
     ├── test_classifier_data.py
+    ├── test_classifier_freezing.py
     ├── test_classifier_preprocessing.py
     ├── test_classifier_review.py
     ├── test_classifier_selection.py

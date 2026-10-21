@@ -125,8 +125,8 @@ Human review uses a separate local worksheet named
 chain and refuses to overwrite an existing worksheet. Each reviewer must record `approve`,
 `correct`, or `exclude`, a lowercase hyphenated reviewer ID (for example, `kethan-kanithi`), a
 timezone-aware review timestamp, and notes for every correction or exclusion. The audit command
-detects modified or reordered source evidence,
-invalid label/category combinations, incomplete decisions, and missing reviewer evidence.
+detects modified or reordered source evidence, invalid label/category combinations, incomplete
+decisions, and missing reviewer evidence.
 Adversarial text that begins with a spreadsheet formula marker is neutralized when the worksheet
 is generated.
 
@@ -144,6 +144,7 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli schem
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema dataset --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema preprocessing --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema selection --check
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema review --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-sources `
   data/classifier/source-registry.v2.json
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli collect-sources `
@@ -167,11 +168,26 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli prepa
   --repository-root .
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli audit-review `
   data/classifier/processed/risk-dataset-human-review.v1.csv --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli freeze-review `
+  --repository-root . --report data/classifier/review-report.v1.json
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-review `
+  data/classifier/review-report.v1.json --repository-root . --require-artifacts
 ```
 
 Use `--require-complete` with `audit-review` only after every row has a genuine human decision.
 The editable worksheet is local and ignored by Git because it contains licensed source text and
 reviewer work. Keep a protected backup while review is in progress.
+
+`freeze-review` is intentionally fail-closed. It accepts only a complete worksheet whose
+immutable columns still match the selected dataset. Retained examples receive their final human
+labels, reviewer IDs, timestamps, and `approved` state. The generated frozen dataset remains
+ignored locally, while `review-report.v1.json` records checksums and aggregate decision, reviewer,
+split, and label counts. The report never contains prompt text or reviewer notes.
+
+The selection currently contains exactly the 1,000-example minimum. Therefore, any `exclude`
+decision requires a replacement-candidate selection before freezing; the tool will not silently
+lower a split below the registered research design. The current worksheet still has 1,000 pending
+decisions, so no frozen dataset or review report has been created yet.
 
 The committed dataset fixture validates only the format. It is synthetic, is not classifier
 training data, and must not be reported as an experimental result.

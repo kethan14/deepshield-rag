@@ -1,0 +1,220 @@
+{
+  "$defs": {
+    "ReviewSplitSummary": {
+      "additionalProperties": false,
+      "description": "Decision and final-label counts for one reviewed classifier split.",
+      "properties": {
+        "approved_count": {
+          "minimum": 0,
+          "title": "Approved Count",
+          "type": "integer"
+        },
+        "corrected_count": {
+          "minimum": 0,
+          "title": "Corrected Count",
+          "type": "integer"
+        },
+        "excluded_count": {
+          "minimum": 0,
+          "title": "Excluded Count",
+          "type": "integer"
+        },
+        "input_count": {
+          "minimum": 1,
+          "title": "Input Count",
+          "type": "integer"
+        },
+        "output_count": {
+          "minimum": 1,
+          "title": "Output Count",
+          "type": "integer"
+        },
+        "output_label_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/RiskLabel"
+          },
+          "title": "Output Label Counts",
+          "type": "object"
+        },
+        "split": {
+          "$ref": "#/$defs/RiskSplit"
+        }
+      },
+      "required": [
+        "split",
+        "input_count",
+        "approved_count",
+        "corrected_count",
+        "excluded_count",
+        "output_count",
+        "output_label_counts"
+      ],
+      "title": "ReviewSplitSummary",
+      "type": "object"
+    },
+    "RiskLabel": {
+      "description": "Binary decision learned by the lightweight classifier.",
+      "enum": [
+        "benign",
+        "adversarial"
+      ],
+      "title": "RiskLabel",
+      "type": "string"
+    },
+    "RiskSplit": {
+      "description": "Leakage-resistant classifier-data partitions.",
+      "enum": [
+        "train",
+        "validation",
+        "test",
+        "external-test"
+      ],
+      "title": "RiskSplit",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Auditable evidence connecting human decisions to frozen classifier data.",
+  "properties": {
+    "approved_count": {
+      "minimum": 0,
+      "title": "Approved Count",
+      "type": "integer"
+    },
+    "corrected_count": {
+      "minimum": 0,
+      "title": "Corrected Count",
+      "type": "integer"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "excluded_count": {
+      "minimum": 0,
+      "title": "Excluded Count",
+      "type": "integer"
+    },
+    "input_count": {
+      "minimum": 1,
+      "title": "Input Count",
+      "type": "integer"
+    },
+    "input_dataset_path": {
+      "const": "data/classifier/processed/risk-dataset-selected.v1.json",
+      "title": "Input Dataset Path",
+      "type": "string"
+    },
+    "input_dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Input Dataset Sha256",
+      "type": "string"
+    },
+    "output_count": {
+      "minimum": 1,
+      "title": "Output Count",
+      "type": "integer"
+    },
+    "output_dataset_path": {
+      "const": "data/classifier/processed/risk-dataset-reviewed.v1.json",
+      "title": "Output Dataset Path",
+      "type": "string"
+    },
+    "output_dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Output Dataset Sha256",
+      "type": "string"
+    },
+    "report_id": {
+      "const": "deepshield-risk-classifier-review",
+      "default": "deepshield-risk-classifier-review",
+      "title": "Report Id",
+      "type": "string"
+    },
+    "report_version": {
+      "minimum": 1,
+      "title": "Report Version",
+      "type": "integer"
+    },
+    "review_protocol_version": {
+      "const": "deepshield-c2-human-review-v1",
+      "default": "deepshield-c2-human-review-v1",
+      "title": "Review Protocol Version",
+      "type": "string"
+    },
+    "review_worksheet_path": {
+      "const": "data/classifier/processed/risk-dataset-human-review.v1.csv",
+      "title": "Review Worksheet Path",
+      "type": "string"
+    },
+    "review_worksheet_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Review Worksheet Sha256",
+      "type": "string"
+    },
+    "reviewer_counts": {
+      "minProperties": 1,
+      "patternProperties": {
+        "^[a-z0-9]+(?:-[a-z0-9]+)*$": {
+          "type": "integer"
+        }
+      },
+      "propertyNames": {
+        "maxLength": 80,
+        "minLength": 1
+      },
+      "title": "Reviewer Counts",
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "selection_report_path": {
+      "const": "data/classifier/selection-report.v1.json",
+      "title": "Selection Report Path",
+      "type": "string"
+    },
+    "selection_report_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Selection Report Sha256",
+      "type": "string"
+    },
+    "splits": {
+      "items": {
+        "$ref": "#/$defs/ReviewSplitSummary"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "title": "Splits",
+      "type": "array"
+    }
+  },
+  "required": [
+    "report_version",
+    "created_at",
+    "selection_report_path",
+    "selection_report_sha256",
+    "input_dataset_path",
+    "input_dataset_sha256",
+    "review_worksheet_path",
+    "review_worksheet_sha256",
+    "output_dataset_path",
+    "output_dataset_sha256",
+    "input_count",
+    "approved_count",
+    "corrected_count",
+    "excluded_count",
+    "output_count",
+    "reviewer_counts",
+    "splits"
+  ],
+  "title": "ClassifierReviewReport",
+  "type": "object"
+}
