@@ -17,6 +17,7 @@ dependencies = [
   "pypdf==6.5.0",
   "pydantic==2.13.5",
   "pydantic-settings==2.15.0",
+  "scikit-learn==1.9.1",
   "uvicorn[standard]==0.52.4",
 ]
 
@@ -68,3 +69,7 @@ line-ending = "lf"
 python_version = "3.11"
 strict = true
 warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["sklearn", "sklearn.*"]
+ignore_missing_imports = true

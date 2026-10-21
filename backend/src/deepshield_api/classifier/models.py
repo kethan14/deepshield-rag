@@ -1,6 +1,7 @@
 """Strict provenance and example contracts for the C2 risk classifier."""
 
 import hashlib
+import math
 from datetime import datetime
 from enum import StrEnum
 from pathlib import PurePosixPath
@@ -770,3 +771,212 @@ class ClassifierReviewReport(BaseModel):
         if sum(summary.excluded_count for summary in self.splits) != self.excluded_count:
             raise ValueError("review split exclusions must match report exclusion count")
         return self
+
+
+class ClassifierTrainingConfig(BaseModel):
+    """Frozen, student-scale configuration for the C2 text-risk classifier."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    config_version: Literal["1.0"] = "1.0"
+    random_seed: Literal[3407] = 3407
+    feature_extractor: Literal["tfidf-char-wb"] = "tfidf-char-wb"
+    analyzer: Literal["char_wb"] = "char_wb"
+    ngram_min: Literal[3] = 3
+    ngram_max: Literal[5] = 5
+    lowercase: Literal[True] = True
+    minimum_document_frequency: Literal[2] = 2
+    maximum_features: Literal[20000] = 20_000
+    sublinear_term_frequency: Literal[True] = True
+    norm: Literal["l2"] = "l2"
+    classifier: Literal["logistic-regression"] = "logistic-regression"
+    penalty: Literal["l2"] = "l2"
+    l1_ratio: float = 0.0
+    solver: Literal["liblinear"] = "liblinear"
+    regularization_c: float = 1.0
+    class_weight: Literal["balanced"] = "balanced"
+    maximum_iterations: Literal[1000] = 1000
+    threshold_metric: Literal["adversarial-f1"] = "adversarial-f1"
+    threshold_minimum: float = 0.05
+    threshold_maximum: float = 0.95
+    threshold_step: float = 0.01
+
+    @model_validator(mode="after")
+    def require_frozen_numeric_settings(self) -> Self:
+        if self.regularization_c != 1.0 or self.l1_ratio != 0.0:
+            raise ValueError("L2 regularization settings are frozen at C=1.0 and l1_ratio=0.0")
+        if (self.threshold_minimum, self.threshold_maximum, self.threshold_step) != (
+            0.05,
+            0.95,
+            0.01,
+        ):
+            raise ValueError("threshold grid is frozen at 0.05 through 0.95 by 0.01")
+        return self
+
+
+class BinaryClassificationMetrics(BaseModel):
+    """Security-relevant binary metrics at one frozen operating threshold."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    split: RiskSplit
+    example_count: int = Field(ge=1)
+    threshold: float = Field(ge=0, le=1)
+    true_benign: int = Field(ge=0)
+    false_alarm: int = Field(ge=0)
+    missed_attack: int = Field(ge=0)
+    detected_attack: int = Field(ge=0)
+    accuracy: float = Field(ge=0, le=1)
+    balanced_accuracy: float = Field(ge=0, le=1)
+    adversarial_precision: float = Field(ge=0, le=1)
+    adversarial_recall: float = Field(ge=0, le=1)
+    adversarial_f1: float = Field(ge=0, le=1)
+    roc_auc: float = Field(ge=0, le=1)
+    average_precision: float = Field(ge=0, le=1)
+
+    @model_validator(mode="after")
+    def require_complete_confusion_matrix(self) -> Self:
+        total = self.true_benign + self.false_alarm + self.missed_attack + self.detected_attack
+        if total != self.example_count:
+            raise ValueError("confusion-matrix counts must sum to example_count")
+        expected_accuracy = (self.true_benign + self.detected_attack) / total
+        benign_total = self.true_benign + self.false_alarm
+        attack_total = self.missed_attack + self.detected_attack
+        if not benign_total or not attack_total:
+            raise ValueError("binary metrics require both reference classes")
+        expected_balanced = (
+            self.true_benign / benign_total + self.detected_attack / attack_total
+        ) / 2
+        predicted_attack = self.false_alarm + self.detected_attack
+        expected_precision = self.detected_attack / predicted_attack if predicted_attack else 0.0
+        expected_recall = self.detected_attack / attack_total
+        denominator = expected_precision + expected_recall
+        expected_f1 = 2 * expected_precision * expected_recall / denominator if denominator else 0.0
+        expected = {
+            "accuracy": expected_accuracy,
+            "balanced_accuracy": expected_balanced,
+            "adversarial_precision": expected_precision,
+            "adversarial_recall": expected_recall,
+            "adversarial_f1": expected_f1,
+        }
+        if any(
+            not math.isclose(getattr(self, field), value, rel_tol=1e-12, abs_tol=1e-12)
+            for field, value in expected.items()
+        ):
+            raise ValueError("derived metrics must match confusion-matrix counts")
+        return self
+
+
+class RiskClassifierArtifact(BaseModel):
+    """Portable, non-executable JSON representation of a fitted C2 classifier."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["1.0"] = "1.0"
+    model_id: Literal["deepshield-c2-risk-classifier"] = "deepshield-c2-risk-classifier"
+    model_version: int = Field(ge=1)
+    created_at: datetime
+    training_dataset_sha256: Sha256Digest
+    config: ClassifierTrainingConfig
+    threshold: float = Field(ge=0, le=1)
+    features: list[str] = Field(min_length=1)
+    inverse_document_frequency: list[float] = Field(min_length=1)
+    coefficients: list[float] = Field(min_length=1)
+    intercept: float
+
+    @field_validator("created_at")
+    @classmethod
+    def require_artifact_timezone(cls, value: datetime) -> datetime:
+        if value.utcoffset() is None:
+            raise ValueError("created_at must include a timezone")
+        return value
+
+    @field_validator("inverse_document_frequency", "coefficients")
+    @classmethod
+    def require_finite_vectors(cls, value: list[float]) -> list[float]:
+        if not all(math.isfinite(item) for item in value):
+            raise ValueError("model vectors must contain only finite values")
+        return value
+
+    @field_validator("intercept")
+    @classmethod
+    def require_finite_intercept(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("model intercept must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def require_aligned_feature_vectors(self) -> Self:
+        size = len(self.features)
+        if len(set(self.features)) != size:
+            raise ValueError("model features must be unique")
+        if len(self.inverse_document_frequency) != size or len(self.coefficients) != size:
+            raise ValueError("model feature, IDF, and coefficient vectors must align")
+        if size > self.config.maximum_features:
+            raise ValueError("model feature count exceeds the frozen configuration")
+        if not _is_threshold_on_grid(self.threshold, self.config):
+            raise ValueError("model threshold is outside the frozen validation grid")
+        return self
+
+
+class ClassifierTrainingReport(BaseModel):
+    """Auditable aggregate evidence for one classifier training run."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    schema_version: Literal["1.0"] = "1.0"
+    report_id: Literal["deepshield-c2-risk-classifier-training"] = (
+        "deepshield-c2-risk-classifier-training"
+    )
+    report_version: int = Field(ge=1)
+    created_at: datetime
+    review_report_path: Literal["data/classifier/review-report.v1.json"]
+    review_report_sha256: Sha256Digest
+    input_dataset_path: Literal["data/classifier/processed/risk-dataset-reviewed.v1.json"]
+    input_dataset_sha256: Sha256Digest
+    model_artifact_path: Literal["data/classifier/models/risk-classifier.v1.json"]
+    model_artifact_sha256: Sha256Digest
+    config: ClassifierTrainingConfig
+    python_version: str = Field(pattern=r"^3\.11\.[0-9]+$")
+    numpy_version: str = Field(min_length=1, max_length=40)
+    scikit_learn_version: Literal["1.9.1"]
+    training_count: int = Field(ge=500)
+    validation_count: int = Field(ge=100)
+    selected_threshold: float = Field(ge=0, le=1)
+    threshold_candidates_evaluated: Literal[91] = 91
+    validation_metrics: BinaryClassificationMetrics
+    test_metrics: BinaryClassificationMetrics
+    external_test_metrics: BinaryClassificationMetrics
+
+    @field_validator("created_at")
+    @classmethod
+    def require_training_timezone(cls, value: datetime) -> datetime:
+        if value.utcoffset() is None:
+            raise ValueError("created_at must include a timezone")
+        return value
+
+    @model_validator(mode="after")
+    def require_expected_metric_splits_and_threshold(self) -> Self:
+        if self.validation_metrics.split is not RiskSplit.VALIDATION:
+            raise ValueError("validation metrics require the validation split")
+        if self.test_metrics.split is not RiskSplit.TEST:
+            raise ValueError("test metrics require the test split")
+        if self.external_test_metrics.split is not RiskSplit.EXTERNAL_TEST:
+            raise ValueError("external metrics require the external-test split")
+        metrics = [self.validation_metrics, self.test_metrics, self.external_test_metrics]
+        if any(item.threshold != self.selected_threshold for item in metrics):
+            raise ValueError("all reported metrics must use the selected validation threshold")
+        if self.validation_metrics.example_count != self.validation_count:
+            raise ValueError("validation count must match validation metrics")
+        if self.test_metrics.example_count < 200 or self.external_test_metrics.example_count < 200:
+            raise ValueError("held-out metrics do not meet the registered split minimums")
+        if not _is_threshold_on_grid(self.selected_threshold, self.config):
+            raise ValueError("selected threshold is outside the frozen validation grid")
+        return self
+
+
+def _is_threshold_on_grid(threshold: float, config: ClassifierTrainingConfig) -> bool:
+    if not config.threshold_minimum <= threshold <= config.threshold_maximum:
+        return False
+    step_count = (threshold - config.threshold_minimum) / config.threshold_step
+    return math.isclose(step_count, round(step_count), rel_tol=0, abs_tol=1e-9)

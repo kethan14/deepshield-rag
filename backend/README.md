@@ -300,6 +300,7 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli schem
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema preprocessing --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema selection --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema review --check
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema training --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-sources `
   data/classifier/source-registry.v2.json
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli collect-sources `
@@ -327,6 +328,10 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli freez
   --repository-root . --report data/classifier/review-report.v1.json
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-review `
   data/classifier/review-report.v1.json --repository-root . --require-artifacts
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli train `
+  --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-training `
+  data/classifier/training-report.v1.json --repository-root . --require-artifacts
 ```
 
 The small committed fixture tests the contract only. It is not training data or a measured
@@ -355,6 +360,15 @@ report. It fails if any row is pending, evidence changed, or exclusions leave th
 1,000-example/split minimums unmet. The current worksheet is still entirely pending, so the
 project has not created or claimed a frozen training dataset.
 
+The implemented training stage remains blocked until that review is complete. It uses pinned
+scikit-learn 1.9.1 to fit character 3-5 gram TF-IDF features and L2 logistic regression on the
+training split. A 91-value threshold grid is evaluated only on validation data; the selected
+threshold is then applied unchanged to the internal and external tests. The report records
+confusion counts, balanced and standard accuracy, adversarial precision/recall/F1, ROC AUC, and
+average precision. The fitted artifact is non-executable JSON and remains ignored locally;
+validation reloads it and recomputes every held-out metric. Synthetic unit-test results are not
+reported as research findings, and no real report is produced from the pending worksheet.
+
 ## Project structure
 
 ```text
@@ -374,7 +388,8 @@ backend/
 │       │   ├── models.py
 │       │   ├── preprocessing.py
 │       │   ├── review.py
-│       │   └── selection.py
+│       │   ├── selection.py
+│       │   └── training.py
 │       ├── corpus/
 │       │   ├── __init__.py
 │       │   ├── chunking.py
@@ -413,6 +428,7 @@ backend/
     ├── test_classifier_preprocessing.py
     ├── test_classifier_review.py
     ├── test_classifier_selection.py
+    ├── test_classifier_training.py
     ├── test_evaluation_manifest.py
     ├── test_evaluation_models.py
     ├── test_rag_baseline.py
