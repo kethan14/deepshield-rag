@@ -114,13 +114,25 @@ candidates. It selected exactly 1,000 examples for review:
 | Test          |      200 |    189 |    100 |         100 |
 | External test |      200 |    200 |    100 |         100 |
 
-The selected dataset and its 1,000-row review worksheet remain under the ignored
+The selected dataset and its machine-generated selection packet remain under the ignored
 `data/classifier/processed/` directory. Only aggregate counts, rules, paths, and cryptographic
 checksums are committed in `selection-report.v1.json`; this avoids redistributing source text
 before the licensing review is finalized. Zero detected overlap is evidence about this defined
-check, not proof that the datasets are semantically unrelated. All examples remain `draft`, and
-the worksheet contains blank reviewer fields. Classifier training is blocked until a human
-reviews the labels and the approved dataset is explicitly frozen.
+check, not proof that the datasets are semantically unrelated.
+
+Human review uses a separate local worksheet named
+`risk-dataset-human-review.v1.csv`. Preparing it first verifies the complete selection evidence
+chain and refuses to overwrite an existing worksheet. Each reviewer must record `approve`,
+`correct`, or `exclude`, a lowercase hyphenated reviewer ID (for example, `kethan-kanithi`), a
+timezone-aware review timestamp, and notes for every correction or exclusion. The audit command
+detects modified or reordered source evidence,
+invalid label/category combinations, incomplete decisions, and missing reviewer evidence.
+Adversarial text that begins with a spreadsheet formula marker is neutralized when the worksheet
+is generated.
+
+Preparing or auditing the worksheet does not constitute human review, change any example to
+`approved`, or authorize training. All examples remain `draft` until a person finishes the
+worksheet and a later, explicit freeze step creates a reviewed artifact.
 
 ## Commands
 
@@ -151,7 +163,15 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli selec
   --repository-root .
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-selection `
   data/classifier/selection-report.v1.json --repository-root . --require-artifacts
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli prepare-review `
+  --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli audit-review `
+  data/classifier/processed/risk-dataset-human-review.v1.csv --repository-root .
 ```
+
+Use `--require-complete` with `audit-review` only after every row has a genuine human decision.
+The editable worksheet is local and ignored by Git because it contains licensed source text and
+reviewer work. Keep a protected backup while review is in progress.
 
 The committed dataset fixture validates only the format. It is synthetic, is not classifier
 training data, and must not be reported as an experimental result.

@@ -318,6 +318,10 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli selec
   --repository-root .
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-selection `
   data/classifier/selection-report.v1.json --repository-root . --require-artifacts
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli prepare-review `
+  --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli audit-review `
+  data/classifier/processed/risk-dataset-human-review.v1.csv --repository-root .
 ```
 
 The small committed fixture tests the contract only. It is not training data or a measured
@@ -330,6 +334,15 @@ payloads, preserves near-duplicate groups, and creates a balanced 1,000-example 
 packet. The committed report contains aggregate evidence and checksums only. The selected data
 remains `draft`; these commands do not replace the required human label review or authorize model
 training.
+
+`prepare-review` creates a separate, editable 1,000-row worksheet only after validating the
+selection report and its local artifacts. It refuses to overwrite an existing worksheet and
+neutralizes formula-like source text for safer spreadsheet use. Reviewers record `approve`,
+`correct`, or `exclude`; every completed row requires a reviewer ID and timezone-aware timestamp,
+and corrections or exclusions require notes. `audit-review` validates those decisions and
+reports progress without changing the dataset. Add `--require-complete` only when a human
+reviewer has finished every row. Neither command marks examples approved or freezes training
+data; that remains a later explicit step.
 
 ## Project structure
 
@@ -348,6 +361,7 @@ backend/
 │       │   ├── manifest.py
 │       │   ├── models.py
 │       │   ├── preprocessing.py
+│       │   ├── review.py
 │       │   └── selection.py
 │       ├── corpus/
 │       │   ├── __init__.py
@@ -384,6 +398,7 @@ backend/
     ├── test_classifier_collection.py
     ├── test_classifier_data.py
     ├── test_classifier_preprocessing.py
+    ├── test_classifier_review.py
     ├── test_classifier_selection.py
     ├── test_evaluation_manifest.py
     ├── test_evaluation_models.py
