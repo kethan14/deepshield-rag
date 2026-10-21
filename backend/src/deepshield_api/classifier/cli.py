@@ -30,6 +30,14 @@ from deepshield_api.classifier.preprocessing import (
     validate_preprocessing_report,
     write_preprocessing_result,
 )
+from deepshield_api.classifier.review import (
+    DEFAULT_REVIEW_WORKSHEET,
+    ClassifierReviewError,
+    audit_classifier_review_worksheet,
+    load_selected_dataset_for_review,
+    prepare_classifier_review_worksheet,
+    write_classifier_review_worksheet,
+)
 from deepshield_api.classifier.selection import (
     ClassifierSelectionError,
     load_selection_report,
@@ -119,6 +127,21 @@ def build_parser() -> argparse.ArgumentParser:
     selection_report.add_argument("report", type=Path)
     selection_report.add_argument("--repository-root", type=Path, default=Path.cwd())
     selection_report.add_argument("--require-artifacts", action="store_true")
+
+    prepare_review = subparsers.add_parser(
+        "prepare-review",
+        help="Create a separate editable human-review worksheet.",
+    )
+    prepare_review.add_argument("--repository-root", type=Path, default=Path.cwd())
+    prepare_review.add_argument("--output", type=Path, default=DEFAULT_REVIEW_WORKSHEET)
+
+    audit_review = subparsers.add_parser(
+        "audit-review",
+        help="Validate reviewer decisions and report completion progress.",
+    )
+    audit_review.add_argument("worksheet", type=Path, nargs="?", default=DEFAULT_REVIEW_WORKSHEET)
+    audit_review.add_argument("--repository-root", type=Path, default=Path.cwd())
+    audit_review.add_argument("--require-complete", action="store_true")
 
     dataset = subparsers.add_parser("validate-dataset", help="Validate a classifier dataset.")
     dataset.add_argument("dataset", type=Path)
@@ -230,6 +253,37 @@ def main(argv: list[str] | None = None) -> int:
                 f"for {selected_count} review candidates."
             )
             return 0
+        if args.command == "prepare-review":
+            output_path = args.output
+            if not output_path.is_absolute():
+                output_path = args.repository_root / output_path
+            expected_path = (args.repository_root / DEFAULT_REVIEW_WORKSHEET).resolve()
+            if output_path.resolve() != expected_path:
+                print(
+                    f"review worksheet must use {DEFAULT_REVIEW_WORKSHEET.as_posix()}",
+                    file=sys.stderr,
+                )
+                return 2
+            content = prepare_classifier_review_worksheet(args.repository_root)
+            write_classifier_review_worksheet(output_path, content)
+            print(f"Prepared classifier review worksheet: {output_path}")
+            return 0
+        if args.command == "audit-review":
+            worksheet_path = args.worksheet
+            if not worksheet_path.is_absolute():
+                worksheet_path = args.repository_root / worksheet_path
+            selected_dataset = load_selected_dataset_for_review(args.repository_root)
+            progress = audit_classifier_review_worksheet(
+                worksheet_path,
+                selected_dataset,
+                require_complete=args.require_complete,
+            )
+            print(
+                f"Classifier review: {progress.total} total, {progress.pending} pending, "
+                f"{progress.approved} approved, {progress.corrected} corrected, "
+                f"{progress.excluded} excluded."
+            )
+            return 0
         dataset = load_risk_dataset(args.dataset)
         validate_dataset_references(dataset, args.repository_root)
         if args.require_frozen and dataset.status is not ArtifactStatus.FROZEN:
@@ -244,6 +298,7 @@ def main(argv: list[str] | None = None) -> int:
         ClassifierCollectionError,
         ClassifierManifestError,
         ClassifierPreprocessingError,
+        ClassifierReviewError,
         ClassifierSelectionError,
     ) as exc:
         print(str(exc), file=sys.stderr)
