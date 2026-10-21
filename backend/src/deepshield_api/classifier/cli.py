@@ -53,6 +53,16 @@ from deepshield_api.classifier.selection import (
     validate_selection_report,
     write_selection_result,
 )
+from deepshield_api.classifier.training import (
+    DEFAULT_MODEL_ARTIFACT,
+    DEFAULT_TRAINING_REPORT,
+    ClassifierTrainingError,
+    load_training_report,
+    render_training_report_schema,
+    train_risk_classifier,
+    validate_training_report,
+    write_training_result,
+)
 
 SCHEMA_PATHS = {
     "collection": Path("data/classifier/source-collection.schema.json"),
@@ -61,6 +71,7 @@ SCHEMA_PATHS = {
     "preprocessing": Path("data/classifier/preprocessing-report.schema.json"),
     "review": Path("data/classifier/review-report.schema.json"),
     "selection": Path("data/classifier/selection-report.schema.json"),
+    "training": Path("data/classifier/training-report.schema.json"),
 }
 
 
@@ -165,6 +176,22 @@ def build_parser() -> argparse.ArgumentParser:
     review_report.add_argument("report", type=Path)
     review_report.add_argument("--repository-root", type=Path, default=Path.cwd())
     review_report.add_argument("--require-artifacts", action="store_true")
+
+    train = subparsers.add_parser(
+        "train",
+        help="Fit the frozen lightweight classifier and write versioned evidence.",
+    )
+    train.add_argument("--repository-root", type=Path, default=Path.cwd())
+    train.add_argument("--report", type=Path, default=DEFAULT_TRAINING_REPORT)
+    train.add_argument("--model", type=Path, default=DEFAULT_MODEL_ARTIFACT)
+
+    training_report = subparsers.add_parser(
+        "validate-training",
+        help="Validate training evidence and optionally recompute held-out metrics.",
+    )
+    training_report.add_argument("report", type=Path)
+    training_report.add_argument("--repository-root", type=Path, default=Path.cwd())
+    training_report.add_argument("--require-artifacts", action="store_true")
 
     dataset = subparsers.add_parser("validate-dataset", help="Validate a classifier dataset.")
     dataset.add_argument("dataset", type=Path)
@@ -330,6 +357,40 @@ def main(argv: list[str] | None = None) -> int:
                 f"for {review_report_value.output_count} frozen examples."
             )
             return 0
+        if args.command == "train":
+            report_path = args.report
+            model_path = args.model
+            if not report_path.is_absolute():
+                report_path = args.repository_root / report_path
+            if not model_path.is_absolute():
+                model_path = args.repository_root / model_path
+            training_result = train_risk_classifier(args.repository_root)
+            write_training_result(
+                training_result,
+                args.repository_root,
+                report_path,
+                model_path,
+            )
+            print(
+                f"Trained C2 risk classifier on "
+                f"{training_result.report.training_count} reviewed examples; "
+                f"validation threshold: {training_result.report.selected_threshold:.2f}; "
+                f"audit report: {report_path}"
+            )
+            return 0
+        if args.command == "validate-training":
+            training_report_value = load_training_report(args.report)
+            validate_training_report(
+                training_report_value,
+                args.repository_root,
+                require_artifacts=args.require_artifacts,
+            )
+            print(
+                "Validated classifier training report version "
+                f"{training_report_value.report_version} at threshold "
+                f"{training_report_value.selected_threshold:.2f}."
+            )
+            return 0
         dataset = load_risk_dataset(args.dataset)
         validate_dataset_references(dataset, args.repository_root)
         if args.require_frozen and dataset.status is not ArtifactStatus.FROZEN:
@@ -346,13 +407,22 @@ def main(argv: list[str] | None = None) -> int:
         ClassifierPreprocessingError,
         ClassifierReviewError,
         ClassifierSelectionError,
+        ClassifierTrainingError,
     ) as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
 
 def _handle_schema(
-    kind: Literal["collection", "dataset", "preprocessing", "review", "selection", "sources"],
+    kind: Literal[
+        "collection",
+        "dataset",
+        "preprocessing",
+        "review",
+        "selection",
+        "sources",
+        "training",
+    ],
     output: Path | None,
     check: bool,
 ) -> int:
@@ -363,6 +433,7 @@ def _handle_schema(
         "review": render_review_report_schema,
         "selection": render_selection_report_schema,
         "sources": render_source_registry_schema,
+        "training": render_training_report_schema,
     }
     rendered = renderers[kind]()
     target = output or SCHEMA_PATHS[kind]

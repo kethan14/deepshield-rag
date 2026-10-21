@@ -145,6 +145,7 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli schem
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema preprocessing --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema selection --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema review --check
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema training --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-sources `
   data/classifier/source-registry.v2.json
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli collect-sources `
@@ -172,6 +173,10 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli freez
   --repository-root . --report data/classifier/review-report.v1.json
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-review `
   data/classifier/review-report.v1.json --repository-root . --require-artifacts
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli train `
+  --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-training `
+  data/classifier/training-report.v1.json --repository-root . --require-artifacts
 ```
 
 Use `--require-complete` with `audit-review` only after every row has a genuine human decision.
@@ -188,6 +193,29 @@ The selection currently contains exactly the 1,000-example minimum. Therefore, a
 decision requires a replacement-candidate selection before freezing; the tool will not silently
 lower a split below the registered research design. The current worksheet still has 1,000 pending
 decisions, so no frozen dataset or review report has been created yet.
+
+## Training and evaluation contract
+
+The training pipeline is implemented but remains gated by the incomplete human review. It will
+accept only `risk-dataset-reviewed.v1.json` with `status: frozen` and a matching review report.
+It fits a character 3-5 gram TF-IDF representation plus L2-regularized logistic regression on
+the `train` split. Character features are lightweight and can retain useful signals when attack
+phrasing contains spacing or spelling variations. The exact feature settings, random seed,
+dependency version, and a 91-value threshold grid are frozen in the report schema.
+
+The operating threshold is selected only on the validation split by adversarial-class F1, with
+recall, precision, and the lower threshold as deterministic tie-breakers. The internal test and
+independent external-test partitions are then evaluated once at that same threshold. Reports
+include confusion-matrix counts, accuracy, balanced accuracy, adversarial precision/recall/F1,
+ROC AUC, and average precision. This separation prevents test data from influencing model or
+threshold choices.
+
+The fitted model is stored locally as non-executable JSON under `data/classifier/models/`; it
+contains the vocabulary, IDF values, coefficients, intercept, configuration, threshold, and
+dataset checksum. The committable training report contains only aggregate metrics and hashes.
+Validation reconstructs predictions from the JSON artifact and recomputes every held-out metric.
+The synthetic tests prove the machinery works; they are not classifier-performance results.
+No real training report or model exists while the 1,000-row worksheet remains pending.
 
 The committed dataset fixture validates only the format. It is synthetic, is not classifier
 training data, and must not be reported as an experimental result.

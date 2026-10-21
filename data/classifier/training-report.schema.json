@@ -1,0 +1,378 @@
+{
+  "$defs": {
+    "BinaryClassificationMetrics": {
+      "additionalProperties": false,
+      "description": "Security-relevant binary metrics at one frozen operating threshold.",
+      "properties": {
+        "accuracy": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Accuracy",
+          "type": "number"
+        },
+        "adversarial_f1": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Adversarial F1",
+          "type": "number"
+        },
+        "adversarial_precision": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Adversarial Precision",
+          "type": "number"
+        },
+        "adversarial_recall": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Adversarial Recall",
+          "type": "number"
+        },
+        "average_precision": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Average Precision",
+          "type": "number"
+        },
+        "balanced_accuracy": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Balanced Accuracy",
+          "type": "number"
+        },
+        "detected_attack": {
+          "minimum": 0,
+          "title": "Detected Attack",
+          "type": "integer"
+        },
+        "example_count": {
+          "minimum": 1,
+          "title": "Example Count",
+          "type": "integer"
+        },
+        "false_alarm": {
+          "minimum": 0,
+          "title": "False Alarm",
+          "type": "integer"
+        },
+        "missed_attack": {
+          "minimum": 0,
+          "title": "Missed Attack",
+          "type": "integer"
+        },
+        "roc_auc": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Roc Auc",
+          "type": "number"
+        },
+        "split": {
+          "$ref": "#/$defs/RiskSplit"
+        },
+        "threshold": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "true_benign": {
+          "minimum": 0,
+          "title": "True Benign",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "split",
+        "example_count",
+        "threshold",
+        "true_benign",
+        "false_alarm",
+        "missed_attack",
+        "detected_attack",
+        "accuracy",
+        "balanced_accuracy",
+        "adversarial_precision",
+        "adversarial_recall",
+        "adversarial_f1",
+        "roc_auc",
+        "average_precision"
+      ],
+      "title": "BinaryClassificationMetrics",
+      "type": "object"
+    },
+    "ClassifierTrainingConfig": {
+      "additionalProperties": false,
+      "description": "Frozen, student-scale configuration for the C2 text-risk classifier.",
+      "properties": {
+        "analyzer": {
+          "const": "char_wb",
+          "default": "char_wb",
+          "title": "Analyzer",
+          "type": "string"
+        },
+        "class_weight": {
+          "const": "balanced",
+          "default": "balanced",
+          "title": "Class Weight",
+          "type": "string"
+        },
+        "classifier": {
+          "const": "logistic-regression",
+          "default": "logistic-regression",
+          "title": "Classifier",
+          "type": "string"
+        },
+        "config_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Config Version",
+          "type": "string"
+        },
+        "feature_extractor": {
+          "const": "tfidf-char-wb",
+          "default": "tfidf-char-wb",
+          "title": "Feature Extractor",
+          "type": "string"
+        },
+        "l1_ratio": {
+          "default": 0.0,
+          "title": "L1 Ratio",
+          "type": "number"
+        },
+        "lowercase": {
+          "const": true,
+          "default": true,
+          "title": "Lowercase",
+          "type": "boolean"
+        },
+        "maximum_features": {
+          "const": 20000,
+          "default": 20000,
+          "title": "Maximum Features",
+          "type": "integer"
+        },
+        "maximum_iterations": {
+          "const": 1000,
+          "default": 1000,
+          "title": "Maximum Iterations",
+          "type": "integer"
+        },
+        "minimum_document_frequency": {
+          "const": 2,
+          "default": 2,
+          "title": "Minimum Document Frequency",
+          "type": "integer"
+        },
+        "ngram_max": {
+          "const": 5,
+          "default": 5,
+          "title": "Ngram Max",
+          "type": "integer"
+        },
+        "ngram_min": {
+          "const": 3,
+          "default": 3,
+          "title": "Ngram Min",
+          "type": "integer"
+        },
+        "norm": {
+          "const": "l2",
+          "default": "l2",
+          "title": "Norm",
+          "type": "string"
+        },
+        "penalty": {
+          "const": "l2",
+          "default": "l2",
+          "title": "Penalty",
+          "type": "string"
+        },
+        "random_seed": {
+          "const": 3407,
+          "default": 3407,
+          "title": "Random Seed",
+          "type": "integer"
+        },
+        "regularization_c": {
+          "default": 1.0,
+          "title": "Regularization C",
+          "type": "number"
+        },
+        "solver": {
+          "const": "liblinear",
+          "default": "liblinear",
+          "title": "Solver",
+          "type": "string"
+        },
+        "sublinear_term_frequency": {
+          "const": true,
+          "default": true,
+          "title": "Sublinear Term Frequency",
+          "type": "boolean"
+        },
+        "threshold_maximum": {
+          "default": 0.95,
+          "title": "Threshold Maximum",
+          "type": "number"
+        },
+        "threshold_metric": {
+          "const": "adversarial-f1",
+          "default": "adversarial-f1",
+          "title": "Threshold Metric",
+          "type": "string"
+        },
+        "threshold_minimum": {
+          "default": 0.05,
+          "title": "Threshold Minimum",
+          "type": "number"
+        },
+        "threshold_step": {
+          "default": 0.01,
+          "title": "Threshold Step",
+          "type": "number"
+        }
+      },
+      "title": "ClassifierTrainingConfig",
+      "type": "object"
+    },
+    "RiskSplit": {
+      "description": "Leakage-resistant classifier-data partitions.",
+      "enum": [
+        "train",
+        "validation",
+        "test",
+        "external-test"
+      ],
+      "title": "RiskSplit",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Auditable aggregate evidence for one classifier training run.",
+  "properties": {
+    "config": {
+      "$ref": "#/$defs/ClassifierTrainingConfig"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "external_test_metrics": {
+      "$ref": "#/$defs/BinaryClassificationMetrics"
+    },
+    "input_dataset_path": {
+      "const": "data/classifier/processed/risk-dataset-reviewed.v1.json",
+      "title": "Input Dataset Path",
+      "type": "string"
+    },
+    "input_dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Input Dataset Sha256",
+      "type": "string"
+    },
+    "model_artifact_path": {
+      "const": "data/classifier/models/risk-classifier.v1.json",
+      "title": "Model Artifact Path",
+      "type": "string"
+    },
+    "model_artifact_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Model Artifact Sha256",
+      "type": "string"
+    },
+    "numpy_version": {
+      "maxLength": 40,
+      "minLength": 1,
+      "title": "Numpy Version",
+      "type": "string"
+    },
+    "python_version": {
+      "pattern": "^3\\.11\\.[0-9]+$",
+      "title": "Python Version",
+      "type": "string"
+    },
+    "report_id": {
+      "const": "deepshield-c2-risk-classifier-training",
+      "default": "deepshield-c2-risk-classifier-training",
+      "title": "Report Id",
+      "type": "string"
+    },
+    "report_version": {
+      "minimum": 1,
+      "title": "Report Version",
+      "type": "integer"
+    },
+    "review_report_path": {
+      "const": "data/classifier/review-report.v1.json",
+      "title": "Review Report Path",
+      "type": "string"
+    },
+    "review_report_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Review Report Sha256",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scikit_learn_version": {
+      "const": "1.9.1",
+      "title": "Scikit Learn Version",
+      "type": "string"
+    },
+    "selected_threshold": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Selected Threshold",
+      "type": "number"
+    },
+    "test_metrics": {
+      "$ref": "#/$defs/BinaryClassificationMetrics"
+    },
+    "threshold_candidates_evaluated": {
+      "const": 91,
+      "default": 91,
+      "title": "Threshold Candidates Evaluated",
+      "type": "integer"
+    },
+    "training_count": {
+      "minimum": 500,
+      "title": "Training Count",
+      "type": "integer"
+    },
+    "validation_count": {
+      "minimum": 100,
+      "title": "Validation Count",
+      "type": "integer"
+    },
+    "validation_metrics": {
+      "$ref": "#/$defs/BinaryClassificationMetrics"
+    }
+  },
+  "required": [
+    "report_version",
+    "created_at",
+    "review_report_path",
+    "review_report_sha256",
+    "input_dataset_path",
+    "input_dataset_sha256",
+    "model_artifact_path",
+    "model_artifact_sha256",
+    "config",
+    "python_version",
+    "numpy_version",
+    "scikit_learn_version",
+    "training_count",
+    "validation_count",
+    "selected_threshold",
+    "validation_metrics",
+    "test_metrics",
+    "external_test_metrics"
+  ],
+  "title": "ClassifierTrainingReport",
+  "type": "object"
+}
