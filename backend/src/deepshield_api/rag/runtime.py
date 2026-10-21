@@ -1,4 +1,4 @@
-"""Runtime configuration and cached construction of C0 and C1 RAG services."""
+"""Runtime configuration and cached construction of C0, C1, and C2 RAG services."""
 
 from functools import lru_cache
 from pathlib import Path
@@ -6,6 +6,13 @@ from pathlib import Path
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from deepshield_api.classifier.training import (
+    DEFAULT_MODEL_ARTIFACT,
+    DEFAULT_TRAINING_REPORT,
+    load_model_artifact,
+    load_training_report,
+    validate_training_report,
+)
 from deepshield_api.corpus.indexing import (
     DEFAULT_MODEL_NAME,
     FastEmbedBackend,
@@ -13,6 +20,9 @@ from deepshield_api.corpus.indexing import (
     RetrievalHit,
     search_vector_index,
 )
+from deepshield_api.evaluation.synthetic import load_synthetic_environment
+from deepshield_api.rag.c2_guardrails import DeterministicC2Guardrails
+from deepshield_api.rag.deepshield import DeepShieldRagService, PortableRiskClassifier
 from deepshield_api.rag.generation import (
     MaxTokenParameter,
     OpenAICompatibleGenerator,
@@ -46,6 +56,11 @@ class RagSettings(BaseSettings):
     llm_max_output_tokens: int = Field(default=700, ge=1, le=4_096)
     llm_reasoning_effort: ReasoningEffort | None = None
     llm_max_token_parameter: MaxTokenParameter = "max_tokens"
+    classifier_training_report: Path = DEFAULT_TRAINING_REPORT
+    classifier_model_artifact: Path = DEFAULT_MODEL_ARTIFACT
+    synthetic_safety_environment: Path = Path(
+        "data/evaluation/synthetic-safety-environment.v1.json"
+    )
 
 
 class LocalCorpusRetriever:
@@ -83,6 +98,29 @@ def build_hardened_rag_service(settings: RagSettings | None = None) -> HardenedR
     resolved = settings or RagSettings()
     retriever, generator = _build_runtime_components(resolved)
     return HardenedRagService(retriever, generator)
+
+
+def build_deepshield_rag_service(settings: RagSettings | None = None) -> DeepShieldRagService:
+    """Build C2 only from verified reviewed classifier and synthetic safety artifacts."""
+
+    resolved = settings or RagSettings()
+    root = resolved.repository_root.resolve()
+    training_report_path = _under_root(resolved.classifier_training_report, root)
+    model_path = _under_root(resolved.classifier_model_artifact, root)
+    environment_path = _under_root(resolved.synthetic_safety_environment, root)
+    report = load_training_report(training_report_path)
+    validate_training_report(report, root, require_artifacts=True)
+    if (root / report.model_artifact_path).resolve() != model_path:
+        raise RagRuntimeError("configured classifier model does not match training evidence")
+    artifact = load_model_artifact(model_path)
+    environment = load_synthetic_environment(environment_path)
+    retriever, generator = _build_runtime_components(resolved)
+    return DeepShieldRagService(
+        retriever,
+        generator,
+        PortableRiskClassifier(artifact),
+        DeterministicC2Guardrails(environment),
+    )
 
 
 def _build_runtime_components(
@@ -124,6 +162,13 @@ def get_hardened_rag_service() -> HardenedRagService:
     return build_hardened_rag_service()
 
 
+@lru_cache(maxsize=1)
+def get_deepshield_rag_service() -> DeepShieldRagService:
+    """Reuse verified C2 model, index, and safety resources across requests."""
+
+    return build_deepshield_rag_service()
+
+
 def clear_baseline_rag_service_cache() -> None:
     """Reset runtime state for tests or deliberate local configuration changes."""
 
@@ -134,6 +179,12 @@ def clear_hardened_rag_service_cache() -> None:
     """Reset cached C1 runtime state for tests or configuration changes."""
 
     get_hardened_rag_service.cache_clear()
+
+
+def clear_deepshield_rag_service_cache() -> None:
+    """Reset cached C2 runtime state after deliberate artifact changes."""
+
+    get_deepshield_rag_service.cache_clear()
 
 
 def _under_root(path: Path, root: Path) -> Path:
