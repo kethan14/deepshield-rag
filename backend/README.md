@@ -66,6 +66,20 @@ uv run --project backend --no-sync pytest backend --cov=deepshield_api --cov-rep
 
 The configured minimum backend coverage is 80%.
 
+## Deterministic C2 safety layer
+
+`deepshield_api.rag.c2_guardrails` provides two independently testable C2 protections:
+
+- Output inspection blocks exact registered synthetic canaries, fictional emails, phone numbers,
+  student identifiers, and private fixture notes without copying those protected values into logs.
+- Mock-tool authorization denies calls unless trusted server-side context grants the required
+  scope and target fixture. Tools marked as effectful also require explicit trusted confirmation
+  bound to that exact tool-and-fixture pair.
+
+All four tools in the synthetic safety environment are non-executable. Prompt text cannot grant
+a scope, authorize a fixture, or confirm a side effect. These deterministic checks are a C2
+building block; they do not represent the complete C2 pipeline or measured security performance.
+
 ## Validate corpus metadata
 
 Export the deterministic source-manifest JSON Schema:
@@ -406,6 +420,7 @@ backend/
 │       │   └── models.py
 │       └── rag/
 │           ├── __init__.py
+│           ├── c2_guardrails.py
 │           ├── evidence.py
 │           ├── experiment.py
 │           ├── generation.py
@@ -429,6 +444,7 @@ backend/
     ├── test_classifier_review.py
     ├── test_classifier_selection.py
     ├── test_classifier_training.py
+    ├── test_c2_guardrails.py
     ├── test_evaluation_manifest.py
     ├── test_evaluation_models.py
     ├── test_rag_baseline.py

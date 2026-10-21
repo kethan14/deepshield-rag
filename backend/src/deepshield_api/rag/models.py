@@ -1,4 +1,4 @@
-"""Validated request, response, and evidence models for C0 and C1 RAG."""
+"""Validated request, response, and evidence models for comparable RAG configurations."""
 
 from enum import StrEnum
 from typing import Literal
@@ -64,15 +64,16 @@ class BaselineAnswer(BaseModel):
 
 
 class GuardrailStage(StrEnum):
-    """C1 checkpoints that can affect one request."""
+    """Layered checkpoints that can affect one request."""
 
     INPUT = "input"
     RETRIEVAL = "retrieval"
     OUTPUT = "output"
+    AUTHORIZATION = "authorization"
 
 
 class GuardrailAction(StrEnum):
-    """Observable action taken by a deterministic C1 check."""
+    """Observable action taken by a deterministic guardrail."""
 
     ALLOW = "allow"
     WARN = "warn"
@@ -81,7 +82,7 @@ class GuardrailAction(StrEnum):
 
 
 class GuardrailCategory(StrEnum):
-    """Standard risk categories detected without the C2 classifier."""
+    """Sanitized risk categories emitted by deterministic guardrails."""
 
     NONE = "none"
     CONTROL_CHARACTERS = "control-characters"
@@ -93,10 +94,18 @@ class GuardrailCategory(StrEnum):
     MISSING_CITATION = "missing-citation"
     INVALID_CITATION = "invalid-citation"
     SENSITIVE_OUTPUT = "sensitive-output"
+    SYNTHETIC_SECRET_LEAKAGE = "synthetic-secret-leakage"
+    FICTIONAL_PII_LEAKAGE = "fictional-pii-leakage"
+    UNKNOWN_MOCK_TOOL = "unknown-mock-tool"
+    UNKNOWN_SYNTHETIC_FIXTURE = "unknown-synthetic-fixture"
+    MISSING_TOOL_SCOPE = "missing-tool-scope"
+    UNAUTHORIZED_SYNTHETIC_FIXTURE = "unauthorized-synthetic-fixture"
+    SIDE_EFFECT_CONFIRMATION_REQUIRED = "side-effect-confirmation-required"
+    AUTHORIZED_MOCK_TOOL = "authorized-mock-tool"
 
 
 class GuardrailEvent(BaseModel):
-    """Sanitized evidence explaining one C1 guardrail decision."""
+    """Sanitized evidence explaining one guardrail decision."""
 
     model_config = ConfigDict(extra="forbid")
 
