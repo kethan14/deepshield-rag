@@ -10,6 +10,7 @@ from pydantic import BaseModel, ValidationError
 from deepshield_api.classifier.models import (
     ClassifierCollectionReceipt,
     ClassifierPreprocessingReport,
+    ClassifierReviewReport,
     ClassifierSourceRegistry,
     RiskDatasetManifest,
     RiskSplit,
@@ -47,6 +48,12 @@ def load_preprocessing_report(path: Path) -> ClassifierPreprocessingReport:
     return _load_model(path, ClassifierPreprocessingReport, "preprocessing report")
 
 
+def load_review_report(path: Path) -> ClassifierReviewReport:
+    """Load a UTF-8 classifier human-review report."""
+
+    return _load_model(path, ClassifierReviewReport, "review report")
+
+
 def render_source_registry_schema() -> str:
     """Return the canonical source-registry JSON Schema."""
 
@@ -67,6 +74,12 @@ def render_collection_receipt_schema() -> str:
     )
 
 
+def render_review_report_schema() -> str:
+    """Return the canonical human-review report JSON Schema."""
+
+    return json.dumps(ClassifierReviewReport.model_json_schema(), indent=2, sort_keys=True) + "\n"
+
+
 def render_source_registry(registry: ClassifierSourceRegistry) -> str:
     """Return a deterministic source-registry document."""
 
@@ -83,6 +96,12 @@ def render_collection_receipt(receipt: ClassifierCollectionReceipt) -> str:
     """Return a deterministic classifier collection receipt."""
 
     return receipt.model_dump_json(indent=2) + "\n"
+
+
+def render_review_report(report: ClassifierReviewReport) -> str:
+    """Return a deterministic classifier human-review report."""
+
+    return report.model_dump_json(indent=2) + "\n"
 
 
 def validate_dataset_references(dataset: RiskDatasetManifest, repository_root: Path) -> None:

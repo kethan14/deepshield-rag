@@ -10,6 +10,12 @@ from deepshield_api.classifier.collection import (
     collect_registered_sources,
     validate_collection_receipt,
 )
+from deepshield_api.classifier.freezing import (
+    DEFAULT_REVIEW_REPORT,
+    freeze_classifier_review,
+    load_and_validate_review_report,
+    write_review_freeze_result,
+)
 from deepshield_api.classifier.manifest import (
     ClassifierManifestError,
     load_collection_receipt,
@@ -18,6 +24,7 @@ from deepshield_api.classifier.manifest import (
     load_source_registry,
     render_collection_receipt,
     render_collection_receipt_schema,
+    render_review_report_schema,
     render_risk_dataset_schema,
     render_source_registry_schema,
     validate_dataset_references,
@@ -52,6 +59,7 @@ SCHEMA_PATHS = {
     "sources": Path("data/classifier/source-registry.schema.json"),
     "dataset": Path("data/classifier/risk-dataset.schema.json"),
     "preprocessing": Path("data/classifier/preprocessing-report.schema.json"),
+    "review": Path("data/classifier/review-report.schema.json"),
     "selection": Path("data/classifier/selection-report.schema.json"),
 }
 
@@ -142,6 +150,21 @@ def build_parser() -> argparse.ArgumentParser:
     audit_review.add_argument("worksheet", type=Path, nargs="?", default=DEFAULT_REVIEW_WORKSHEET)
     audit_review.add_argument("--repository-root", type=Path, default=Path.cwd())
     audit_review.add_argument("--require-complete", action="store_true")
+
+    freeze_review = subparsers.add_parser(
+        "freeze-review",
+        help="Apply a complete human review and create frozen classifier data.",
+    )
+    freeze_review.add_argument("--repository-root", type=Path, default=Path.cwd())
+    freeze_review.add_argument("--report", type=Path, default=DEFAULT_REVIEW_REPORT)
+
+    review_report = subparsers.add_parser(
+        "validate-review",
+        help="Validate review evidence and the frozen classifier dataset.",
+    )
+    review_report.add_argument("report", type=Path)
+    review_report.add_argument("--repository-root", type=Path, default=Path.cwd())
+    review_report.add_argument("--require-artifacts", action="store_true")
 
     dataset = subparsers.add_parser("validate-dataset", help="Validate a classifier dataset.")
     dataset.add_argument("dataset", type=Path)
@@ -284,6 +307,29 @@ def main(argv: list[str] | None = None) -> int:
                 f"{progress.excluded} excluded."
             )
             return 0
+        if args.command == "freeze-review":
+            report_path = args.report
+            if not report_path.is_absolute():
+                report_path = args.repository_root / report_path
+            result = freeze_classifier_review(args.repository_root)
+            write_review_freeze_result(result, args.repository_root, report_path)
+            print(
+                f"Froze {len(result.dataset.examples)} reviewed classifier examples; "
+                f"audit report: {report_path}"
+            )
+            return 0
+        if args.command == "validate-review":
+            review_report_value = load_and_validate_review_report(
+                args.report,
+                args.repository_root,
+                require_artifacts=args.require_artifacts,
+            )
+            print(
+                "Validated classifier review report version "
+                f"{review_report_value.report_version} "
+                f"for {review_report_value.output_count} frozen examples."
+            )
+            return 0
         dataset = load_risk_dataset(args.dataset)
         validate_dataset_references(dataset, args.repository_root)
         if args.require_frozen and dataset.status is not ArtifactStatus.FROZEN:
@@ -306,7 +352,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _handle_schema(
-    kind: Literal["collection", "dataset", "preprocessing", "selection", "sources"],
+    kind: Literal["collection", "dataset", "preprocessing", "review", "selection", "sources"],
     output: Path | None,
     check: bool,
 ) -> int:
@@ -314,6 +360,7 @@ def _handle_schema(
         "collection": render_collection_receipt_schema,
         "dataset": render_risk_dataset_schema,
         "preprocessing": render_preprocessing_report_schema,
+        "review": render_review_report_schema,
         "selection": render_selection_report_schema,
         "sources": render_source_registry_schema,
     }

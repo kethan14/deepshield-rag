@@ -673,3 +673,100 @@ class ClassifierSelectionReport(BaseModel):
         ):
             raise ValueError("selection summaries must match the frozen split targets")
         return self
+
+
+class ReviewSplitSummary(BaseModel):
+    """Decision and final-label counts for one reviewed classifier split."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    split: RiskSplit
+    input_count: int = Field(ge=1)
+    approved_count: int = Field(ge=0)
+    corrected_count: int = Field(ge=0)
+    excluded_count: int = Field(ge=0)
+    output_count: int = Field(ge=1)
+    output_label_counts: dict[RiskLabel, int]
+
+    @field_validator("output_label_counts")
+    @classmethod
+    def require_review_labels(cls, value: dict[RiskLabel, int]) -> dict[RiskLabel, int]:
+        if set(value) != set(RiskLabel) or any(count < 0 for count in value.values()):
+            raise ValueError("review summaries require both non-negative label counts")
+        return value
+
+    @model_validator(mode="after")
+    def require_review_accounting(self) -> Self:
+        if self.approved_count + self.corrected_count + self.excluded_count != self.input_count:
+            raise ValueError("review decisions must account for every input row")
+        if self.approved_count + self.corrected_count != self.output_count:
+            raise ValueError("approved and corrected rows must equal output count")
+        if sum(self.output_label_counts.values()) != self.output_count:
+            raise ValueError("review output labels must sum to output count")
+        return self
+
+
+class ClassifierReviewReport(BaseModel):
+    """Auditable evidence connecting human decisions to frozen classifier data."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    schema_version: Literal["1.0"] = "1.0"
+    report_id: Literal["deepshield-risk-classifier-review"] = "deepshield-risk-classifier-review"
+    review_protocol_version: Literal["deepshield-c2-human-review-v1"] = (
+        "deepshield-c2-human-review-v1"
+    )
+    report_version: int = Field(ge=1)
+    created_at: datetime
+    selection_report_path: Literal["data/classifier/selection-report.v1.json"]
+    selection_report_sha256: Sha256Digest
+    input_dataset_path: Literal["data/classifier/processed/risk-dataset-selected.v1.json"]
+    input_dataset_sha256: Sha256Digest
+    review_worksheet_path: Literal["data/classifier/processed/risk-dataset-human-review.v1.csv"]
+    review_worksheet_sha256: Sha256Digest
+    output_dataset_path: Literal["data/classifier/processed/risk-dataset-reviewed.v1.json"]
+    output_dataset_sha256: Sha256Digest
+    input_count: int = Field(ge=1)
+    approved_count: int = Field(ge=0)
+    corrected_count: int = Field(ge=0)
+    excluded_count: int = Field(ge=0)
+    output_count: int = Field(ge=1)
+    reviewer_counts: dict[Slug, int] = Field(min_length=1)
+    splits: list[ReviewSplitSummary] = Field(min_length=4, max_length=4)
+
+    @field_validator("created_at")
+    @classmethod
+    def require_review_report_timezone(cls, value: datetime) -> datetime:
+        if value.utcoffset() is None:
+            raise ValueError("created_at must include a timezone")
+        return value
+
+    @field_validator("reviewer_counts")
+    @classmethod
+    def require_positive_reviewer_counts(cls, value: dict[str, int]) -> dict[str, int]:
+        if any(count <= 0 for count in value.values()):
+            raise ValueError("reviewer counts must be positive")
+        return value
+
+    @model_validator(mode="after")
+    def require_complete_review_report(self) -> Self:
+        if self.approved_count + self.corrected_count + self.excluded_count != self.input_count:
+            raise ValueError("review report must account for every input row")
+        if self.approved_count + self.corrected_count != self.output_count:
+            raise ValueError("review report output count must match retained rows")
+        if sum(self.reviewer_counts.values()) != self.input_count:
+            raise ValueError("reviewer counts must account for every decision")
+        split_ids = [summary.split for summary in self.splits]
+        if set(split_ids) != set(RiskSplit) or len(split_ids) != len(set(split_ids)):
+            raise ValueError("review report requires each split exactly once")
+        if sum(summary.input_count for summary in self.splits) != self.input_count:
+            raise ValueError("review split input counts must match report input count")
+        if sum(summary.output_count for summary in self.splits) != self.output_count:
+            raise ValueError("review split output counts must match report output count")
+        if sum(summary.approved_count for summary in self.splits) != self.approved_count:
+            raise ValueError("review split approvals must match report approval count")
+        if sum(summary.corrected_count for summary in self.splits) != self.corrected_count:
+            raise ValueError("review split corrections must match report correction count")
+        if sum(summary.excluded_count for summary in self.splits) != self.excluded_count:
+            raise ValueError("review split exclusions must match report exclusion count")
+        return self
