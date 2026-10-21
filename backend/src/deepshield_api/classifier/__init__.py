@@ -19,11 +19,14 @@ from deepshield_api.classifier.manifest import (
 from deepshield_api.classifier.models import (
     ClassifierCollectionReceipt,
     ClassifierPreprocessingReport,
+    ClassifierSelectionReport,
+    ClassifierSelectionRules,
     ClassifierSource,
     ClassifierSourceRegistry,
     CollectedClassifierFile,
     RiskDatasetManifest,
     RiskExample,
+    SelectionSplitSummary,
 )
 from deepshield_api.classifier.preprocessing import (
     ClassifierPreprocessingError,
@@ -32,6 +35,14 @@ from deepshield_api.classifier.preprocessing import (
     preprocess_classifier_sources,
     validate_preprocessing_report,
     write_preprocessing_result,
+)
+from deepshield_api.classifier.selection import (
+    ClassifierSelectionError,
+    SelectionResult,
+    load_selection_report,
+    select_classifier_review_candidates,
+    validate_selection_report,
+    write_selection_result,
 )
 
 __all__ = [
@@ -42,22 +53,31 @@ __all__ = [
     "ClassifierPreprocessingReport",
     "ClassifierSource",
     "ClassifierSourceRegistry",
+    "ClassifierSelectionError",
+    "ClassifierSelectionReport",
+    "ClassifierSelectionRules",
     "CollectedClassifierFile",
     "RiskDatasetManifest",
     "RiskExample",
+    "SelectionResult",
+    "SelectionSplitSummary",
     "PreprocessingResult",
     "collect_registered_sources",
     "load_collection_receipt",
     "load_preprocessing_report",
     "load_risk_dataset",
     "load_source_registry",
+    "load_selection_report",
     "normalize_classifier_text",
     "preprocess_classifier_sources",
+    "select_classifier_review_candidates",
     "render_collection_receipt_schema",
     "render_risk_dataset_schema",
     "render_source_registry_schema",
     "validate_collection_receipt",
     "validate_dataset_references",
     "validate_preprocessing_report",
+    "validate_selection_report",
     "write_preprocessing_result",
+    "write_selection_result",
 ]

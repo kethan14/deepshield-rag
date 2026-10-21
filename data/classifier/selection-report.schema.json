@@ -1,0 +1,264 @@
+{
+  "$defs": {
+    "ClassifierSelectionRules": {
+      "additionalProperties": false,
+      "description": "Frozen rules for selecting the human-review candidate set.",
+      "properties": {
+        "balance_binary_labels": {
+          "const": true,
+          "default": true,
+          "title": "Balance Binary Labels",
+          "type": "boolean"
+        },
+        "benchmark_near_duplicate_jaccard_threshold": {
+          "default": 0.82,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Benchmark Near Duplicate Jaccard Threshold",
+          "type": "number"
+        },
+        "benchmark_near_duplicate_token_ngram_size": {
+          "const": 3,
+          "default": 3,
+          "title": "Benchmark Near Duplicate Token Ngram Size",
+          "type": "integer"
+        },
+        "preserve_groups": {
+          "const": true,
+          "default": true,
+          "title": "Preserve Groups",
+          "type": "boolean"
+        },
+        "rules_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Rules Version",
+          "type": "string"
+        },
+        "selection_seed": {
+          "const": "deepshield-c2-selection-v1",
+          "default": "deepshield-c2-selection-v1",
+          "title": "Selection Seed",
+          "type": "string"
+        },
+        "target_split_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/RiskSplit"
+          },
+          "title": "Target Split Counts",
+          "type": "object"
+        }
+      },
+      "title": "ClassifierSelectionRules",
+      "type": "object"
+    },
+    "RiskLabel": {
+      "description": "Binary decision learned by the lightweight classifier.",
+      "enum": [
+        "benign",
+        "adversarial"
+      ],
+      "title": "RiskLabel",
+      "type": "string"
+    },
+    "RiskSplit": {
+      "description": "Leakage-resistant classifier-data partitions.",
+      "enum": [
+        "train",
+        "validation",
+        "test",
+        "external-test"
+      ],
+      "title": "RiskSplit",
+      "type": "string"
+    },
+    "SelectionSplitSummary": {
+      "additionalProperties": false,
+      "description": "Selected row and group counts for one classifier split.",
+      "properties": {
+        "group_count": {
+          "minimum": 1,
+          "title": "Group Count",
+          "type": "integer"
+        },
+        "label_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/RiskLabel"
+          },
+          "title": "Label Counts",
+          "type": "object"
+        },
+        "selected_count": {
+          "minimum": 2,
+          "title": "Selected Count",
+          "type": "integer"
+        },
+        "split": {
+          "$ref": "#/$defs/RiskSplit"
+        },
+        "target_count": {
+          "minimum": 2,
+          "title": "Target Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "split",
+        "target_count",
+        "selected_count",
+        "group_count",
+        "label_counts"
+      ],
+      "title": "SelectionSplitSummary",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Auditable evidence for benchmark-safe classifier candidate selection.",
+  "properties": {
+    "benchmark_case_count": {
+      "minimum": 1,
+      "title": "Benchmark Case Count",
+      "type": "integer"
+    },
+    "benchmark_case_ids_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Benchmark Case Ids Sha256",
+      "type": "string"
+    },
+    "benchmark_input_text_count": {
+      "minimum": 1,
+      "title": "Benchmark Input Text Count",
+      "type": "integer"
+    },
+    "benchmark_input_texts_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Benchmark Input Texts Sha256",
+      "type": "string"
+    },
+    "benchmark_path": {
+      "const": "data/evaluation/f1-security-benchmark.v1.json",
+      "title": "Benchmark Path",
+      "type": "string"
+    },
+    "benchmark_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Benchmark Sha256",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "eligible_candidate_count": {
+      "minimum": 1,
+      "title": "Eligible Candidate Count",
+      "type": "integer"
+    },
+    "exact_benchmark_matches_excluded": {
+      "minimum": 0,
+      "title": "Exact Benchmark Matches Excluded",
+      "type": "integer"
+    },
+    "input_candidate_count": {
+      "minimum": 1,
+      "title": "Input Candidate Count",
+      "type": "integer"
+    },
+    "input_dataset_path": {
+      "const": "data/classifier/processed/risk-dataset.v1.json",
+      "title": "Input Dataset Path",
+      "type": "string"
+    },
+    "input_dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Input Dataset Sha256",
+      "type": "string"
+    },
+    "near_benchmark_matches_excluded": {
+      "minimum": 0,
+      "title": "Near Benchmark Matches Excluded",
+      "type": "integer"
+    },
+    "report_id": {
+      "const": "deepshield-risk-classifier-selection",
+      "default": "deepshield-risk-classifier-selection",
+      "title": "Report Id",
+      "type": "string"
+    },
+    "report_version": {
+      "minimum": 1,
+      "title": "Report Version",
+      "type": "integer"
+    },
+    "review_packet_path": {
+      "const": "data/classifier/processed/risk-dataset-selection-review.v1.csv",
+      "title": "Review Packet Path",
+      "type": "string"
+    },
+    "review_packet_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Review Packet Sha256",
+      "type": "string"
+    },
+    "rules": {
+      "$ref": "#/$defs/ClassifierSelectionRules"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "selected_dataset_path": {
+      "const": "data/classifier/processed/risk-dataset-selected.v1.json",
+      "title": "Selected Dataset Path",
+      "type": "string"
+    },
+    "selected_dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Selected Dataset Sha256",
+      "type": "string"
+    },
+    "splits": {
+      "items": {
+        "$ref": "#/$defs/SelectionSplitSummary"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "title": "Splits",
+      "type": "array"
+    }
+  },
+  "required": [
+    "report_version",
+    "created_at",
+    "input_dataset_path",
+    "input_dataset_sha256",
+    "benchmark_path",
+    "benchmark_sha256",
+    "benchmark_case_ids_sha256",
+    "benchmark_input_texts_sha256",
+    "benchmark_case_count",
+    "benchmark_input_text_count",
+    "rules",
+    "input_candidate_count",
+    "exact_benchmark_matches_excluded",
+    "near_benchmark_matches_excluded",
+    "eligible_candidate_count",
+    "selected_dataset_path",
+    "selected_dataset_sha256",
+    "review_packet_path",
+    "review_packet_sha256",
+    "splits"
+  ],
+  "title": "ClassifierSelectionReport",
+  "type": "object"
+}

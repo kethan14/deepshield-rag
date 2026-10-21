@@ -62,6 +62,11 @@ jobs:
           uv run --no-sync python -m deepshield_api.corpus.cli schema --check
           --output ../data/manifests/source-manifest.schema.json
 
+      - name: Confirm classifier selection contract and evidence
+        run: |
+          uv run --no-sync python -m deepshield_api.classifier.cli schema selection --check --output ../data/classifier/selection-report.schema.json
+          uv run --no-sync python -m deepshield_api.classifier.cli validate-selection ../data/classifier/selection-report.v1.json --repository-root ..
+
       - name: Run tests with coverage
         run: uv run --no-sync pytest --cov=deepshield_api --cov-report=term-missing
 

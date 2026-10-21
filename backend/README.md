@@ -297,6 +297,8 @@ their revisions, paths, sizes, hashes, columns, label counts, row counts, and em
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema sources --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema collection --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema dataset --check
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema preprocessing --check
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema selection --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-sources `
   data/classifier/source-registry.v2.json
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli collect-sources `
@@ -312,12 +314,22 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli valid
   data/classifier/preprocessing-report.v1.json --repository-root . --require-dataset
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-dataset `
   data/classifier/processed/risk-dataset.v1.json --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli select-review-candidates `
+  --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-selection `
+  data/classifier/selection-report.v1.json --repository-root . --require-artifacts
 ```
 
 The small committed fixture tests the contract only. It is not training data or a measured
 result. A frozen classifier artifact must keep related prompt groups in one split, contain no
 duplicate text hashes, include human review, preserve an independent external-test source, and
 record evidence that the 600-case system benchmark was excluded.
+
+Selection version 1 performs that exclusion against benchmark prompts and synthetic retrieved
+payloads, preserves near-duplicate groups, and creates a balanced 1,000-example local review
+packet. The committed report contains aggregate evidence and checksums only. The selected data
+remains `draft`; these commands do not replace the required human label review or authorize model
+training.
 
 ## Project structure
 
@@ -335,7 +347,8 @@ backend/
 │       │   ├── collection.py
 │       │   ├── manifest.py
 │       │   ├── models.py
-│       │   └── preprocessing.py
+│       │   ├── preprocessing.py
+│       │   └── selection.py
 │       ├── corpus/
 │       │   ├── __init__.py
 │       │   ├── chunking.py
@@ -371,6 +384,7 @@ backend/
     ├── test_classifier_collection.py
     ├── test_classifier_data.py
     ├── test_classifier_preprocessing.py
+    ├── test_classifier_selection.py
     ├── test_evaluation_manifest.py
     ├── test_evaluation_models.py
     ├── test_rag_baseline.py

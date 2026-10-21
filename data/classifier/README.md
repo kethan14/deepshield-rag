@@ -95,6 +95,33 @@ committed in `preprocessing-report.v1.json`; the JSON Schema is
 `preprocessing-report.schema.json`. Candidates remain `draft`. Human review and explicit
 benchmark-exclusion evidence are still required before a smaller training artifact can be frozen.
 
+## Benchmark-safe review selection
+
+Selection version 1 compares every normalized classifier candidate with all 600 benchmark
+prompts and the seven synthetic retrieved-text payloads. It rejects exact matches and token
+trigram near-duplicates at Jaccard similarity `0.82`, then uses the fixed
+`deepshield-c2-selection-v1` seed to select complete groups. This prevents benchmark examples
+from entering classifier fitting, threshold selection, or classifier testing and prevents related
+classifier prompts from being split across partitions.
+
+The verified run found no exact or threshold-level near-duplicate overlap among the 17,194
+candidates. It selected exactly 1,000 examples for review:
+
+| Split         | Selected | Groups | Benign | Adversarial |
+| ------------- | -------: | -----: | -----: | ----------: |
+| Train         |      500 |    452 |    250 |         250 |
+| Validation    |      100 |     93 |     50 |          50 |
+| Test          |      200 |    189 |    100 |         100 |
+| External test |      200 |    200 |    100 |         100 |
+
+The selected dataset and its 1,000-row review worksheet remain under the ignored
+`data/classifier/processed/` directory. Only aggregate counts, rules, paths, and cryptographic
+checksums are committed in `selection-report.v1.json`; this avoids redistributing source text
+before the licensing review is finalized. Zero detected overlap is evidence about this defined
+check, not proof that the datasets are semantically unrelated. All examples remain `draft`, and
+the worksheet contains blank reviewer fields. Classifier training is blocked until a human
+reviews the labels and the approved dataset is explicitly frozen.
+
 ## Commands
 
 Run these from the repository root:
@@ -104,6 +131,7 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli schem
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema collection --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema dataset --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema preprocessing --check
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli schema selection --check
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-sources `
   data/classifier/source-registry.v2.json
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli collect-sources `
@@ -119,6 +147,10 @@ uv run --project backend --no-sync python -m deepshield_api.classifier.cli valid
   data/classifier/preprocessing-report.v1.json --repository-root . --require-dataset
 uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-dataset `
   data/classifier/processed/risk-dataset.v1.json --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli select-review-candidates `
+  --repository-root .
+uv run --project backend --no-sync python -m deepshield_api.classifier.cli validate-selection `
+  data/classifier/selection-report.v1.json --repository-root . --require-artifacts
 ```
 
 The committed dataset fixture validates only the format. It is synthetic, is not classifier

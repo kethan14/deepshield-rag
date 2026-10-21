@@ -30,12 +30,21 @@ from deepshield_api.classifier.preprocessing import (
     validate_preprocessing_report,
     write_preprocessing_result,
 )
+from deepshield_api.classifier.selection import (
+    ClassifierSelectionError,
+    load_selection_report,
+    render_selection_report_schema,
+    select_classifier_review_candidates,
+    validate_selection_report,
+    write_selection_result,
+)
 
 SCHEMA_PATHS = {
     "collection": Path("data/classifier/source-collection.schema.json"),
     "sources": Path("data/classifier/source-registry.schema.json"),
     "dataset": Path("data/classifier/risk-dataset.schema.json"),
     "preprocessing": Path("data/classifier/preprocessing-report.schema.json"),
+    "selection": Path("data/classifier/selection-report.schema.json"),
 }
 
 
@@ -92,6 +101,25 @@ def build_parser() -> argparse.ArgumentParser:
     preprocessing_report.add_argument("--repository-root", type=Path, default=Path.cwd())
     preprocessing_report.add_argument("--require-dataset", action="store_true")
 
+    select = subparsers.add_parser(
+        "select-review-candidates",
+        help="Exclude benchmark overlap and create the balanced classifier review set.",
+    )
+    select.add_argument(
+        "--report",
+        type=Path,
+        default=Path("data/classifier/selection-report.v1.json"),
+    )
+    select.add_argument("--repository-root", type=Path, default=Path.cwd())
+
+    selection_report = subparsers.add_parser(
+        "validate-selection",
+        help="Validate benchmark-exclusion and classifier-selection evidence.",
+    )
+    selection_report.add_argument("report", type=Path)
+    selection_report.add_argument("--repository-root", type=Path, default=Path.cwd())
+    selection_report.add_argument("--require-artifacts", action="store_true")
+
     dataset = subparsers.add_parser("validate-dataset", help="Validate a classifier dataset.")
     dataset.add_argument("dataset", type=Path)
     dataset.add_argument("--repository-root", type=Path, default=Path.cwd())
@@ -147,14 +175,15 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.command == "preprocess":
             output_path = PurePosixPath(args.output.as_posix())
-            result = preprocess_classifier_sources(
+            preprocessing_result = preprocess_classifier_sources(
                 args.collection,
                 args.repository_root,
                 output_dataset_path=output_path,
             )
-            write_preprocessing_result(result, args.repository_root, args.report)
+            write_preprocessing_result(preprocessing_result, args.repository_root, args.report)
             print(
-                f"Preprocessed {len(result.dataset.examples)} classifier candidates into "
+                f"Preprocessed {len(preprocessing_result.dataset.examples)} classifier candidates "
+                "into "
                 f"{args.output}; audit report: {args.report}"
             )
             return 0
@@ -168,6 +197,37 @@ def main(argv: list[str] | None = None) -> int:
             print(
                 f"Validated classifier preprocessing report version {report.report_version} "
                 f"for {sum(source.output_rows for source in report.sources)} candidates."
+            )
+            return 0
+        if args.command == "select-review-candidates":
+            selection_result = select_classifier_review_candidates(args.repository_root)
+            selection_report_path = args.report
+            if not selection_report_path.is_absolute():
+                selection_report_path = args.repository_root / selection_report_path
+            write_selection_result(
+                selection_result,
+                args.repository_root,
+                selection_report_path,
+            )
+            print(
+                f"Selected {len(selection_result.dataset.examples)} benchmark-safe classifier "
+                f"candidates; review packet: {selection_result.report.review_packet_path}"
+            )
+            return 0
+        if args.command == "validate-selection":
+            selection_report_value = load_selection_report(args.report)
+            validate_selection_report(
+                selection_report_value,
+                args.repository_root,
+                require_artifacts=args.require_artifacts,
+            )
+            selected_count = sum(
+                summary.selected_count for summary in selection_report_value.splits
+            )
+            print(
+                "Validated classifier selection report version "
+                f"{selection_report_value.report_version} "
+                f"for {selected_count} review candidates."
             )
             return 0
         dataset = load_risk_dataset(args.dataset)
@@ -184,13 +244,14 @@ def main(argv: list[str] | None = None) -> int:
         ClassifierCollectionError,
         ClassifierManifestError,
         ClassifierPreprocessingError,
+        ClassifierSelectionError,
     ) as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
 
 def _handle_schema(
-    kind: Literal["collection", "dataset", "preprocessing", "sources"],
+    kind: Literal["collection", "dataset", "preprocessing", "selection", "sources"],
     output: Path | None,
     check: bool,
 ) -> int:
@@ -198,6 +259,7 @@ def _handle_schema(
         "collection": render_collection_receipt_schema,
         "dataset": render_risk_dataset_schema,
         "preprocessing": render_preprocessing_report_schema,
+        "selection": render_selection_report_schema,
         "sources": render_source_registry_schema,
     }
     rendered = renderers[kind]()
