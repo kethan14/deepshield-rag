@@ -80,6 +80,12 @@ All four tools in the synthetic safety environment are non-executable. Prompt te
 a scope, authorize a fixture, or confirm a side effect. These deterministic checks are a C2
 building block; they do not represent the complete C2 pipeline or measured security performance.
 
+The `/api/v1/assistant/query/c2` route orchestrates the learned input and retrieved-text risk
+classifier, C1 standard defenses, registered synthetic-value output inspection, citation checks,
+and sanitized evidence capture. It deliberately remains unavailable until the human-reviewed
+classifier dataset has been frozen and its training report and portable model artifact pass full
+provenance validation. The API therefore cannot silently use the current draft labels.
+
 ## Validate corpus metadata
 
 Export the deterministic source-manifest JSON Schema:
@@ -421,6 +427,7 @@ backend/
 │       └── rag/
 │           ├── __init__.py
 │           ├── c2_guardrails.py
+│           ├── deepshield.py
 │           ├── evidence.py
 │           ├── experiment.py
 │           ├── generation.py
@@ -448,6 +455,7 @@ backend/
     ├── test_evaluation_manifest.py
     ├── test_evaluation_models.py
     ├── test_rag_baseline.py
+    ├── test_rag_deepshield.py
     ├── test_rag_experiment.py
     ├── test_rag_hardened.py
     └── test_health.py

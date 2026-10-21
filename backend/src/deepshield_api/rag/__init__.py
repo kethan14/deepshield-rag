@@ -6,10 +6,13 @@ from deepshield_api.rag.c2_guardrails import (
     ToolAuthorizationContext,
     ToolAuthorizationDecision,
 )
+from deepshield_api.rag.deepshield import DeepShieldRagService, PortableRiskClassifier
 from deepshield_api.rag.hardened import HardenedRagService
 from deepshield_api.rag.models import (
     BaselineAnswer,
     BaselineQuestion,
+    DeepShieldAnswer,
+    DeepShieldQuestion,
     HardenedAnswer,
     HardenedQuestion,
 )
@@ -20,10 +23,14 @@ __all__ = [
     "BaselineQuestion",
     "BaselineRagService",
     "DeterministicC2Guardrails",
+    "DeepShieldAnswer",
+    "DeepShieldQuestion",
+    "DeepShieldRagService",
     "HardenedAnswer",
     "HardenedQuestion",
     "HardenedRagService",
     "MockToolCall",
+    "PortableRiskClassifier",
     "ToolAuthorizationContext",
     "ToolAuthorizationDecision",
 ]

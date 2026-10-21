@@ -1,9 +1,9 @@
 """Validated request, response, and evidence models for comparable RAG configurations."""
 
 from enum import StrEnum
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 from deepshield_api.corpus.models import Slug, SourcePublisher
 
@@ -102,6 +102,8 @@ class GuardrailCategory(StrEnum):
     UNAUTHORIZED_SYNTHETIC_FIXTURE = "unauthorized-synthetic-fixture"
     SIDE_EFFECT_CONFIRMATION_REQUIRED = "side-effect-confirmation-required"
     AUTHORIZED_MOCK_TOOL = "authorized-mock-tool"
+    CLASSIFIER_INPUT_RISK = "classifier-input-risk"
+    CLASSIFIER_RETRIEVAL_RISK = "classifier-retrieval-risk"
 
 
 class GuardrailEvent(BaseModel):
@@ -137,6 +139,59 @@ class HardenedAnswer(BaseModel):
     retrieved_passages: list[RetrievedPassage]
     excluded_chunk_ids: list[str]
     guardrail_events: list[GuardrailEvent] = Field(min_length=1)
+    generated_output_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    generator_model: str = Field(min_length=1)
+    retrieval_model: str = Field(min_length=1)
+    finish_reason: str | None = None
+    usage: GenerationUsage
+
+
+class ClassifierRiskAssessment(BaseModel):
+    """Sanitized C2 classifier evidence without retaining the assessed text."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    stage: GuardrailStage
+    content_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    chunk_id: str | None = None
+    risk_score: float = Field(ge=0, le=1)
+    threshold: float = Field(ge=0, le=1)
+    risky: bool
+    model_id: Literal["deepshield-c2-risk-classifier"] = "deepshield-c2-risk-classifier"
+    model_version: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def require_supported_stage_and_consistent_decision(self) -> Self:
+        if self.stage not in {GuardrailStage.INPUT, GuardrailStage.RETRIEVAL}:
+            raise ValueError("classifier assessments support only input and retrieval stages")
+        if (self.stage is GuardrailStage.RETRIEVAL) != (self.chunk_id is not None):
+            raise ValueError("only retrieval assessments require a chunk_id")
+        if self.risky != (self.risk_score >= self.threshold):
+            raise ValueError("classifier decision must match score and threshold")
+        return self
+
+
+class DeepShieldQuestion(BaselineQuestion):
+    """One question submitted to the complete C2 assistant pipeline."""
+
+
+class DeepShieldAnswer(BaseModel):
+    """C2 result with classifier, deterministic guardrail, and citation evidence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    configuration: Literal["C2"] = "C2"
+    prompt_version: Literal["c2-v1"] = "c2-v1"
+    guardrail_version: Literal["c2-v1"] = "c2-v1"
+    outcome: Literal["answered", "refused"]
+    question: str
+    answer: str = Field(min_length=1)
+    cited_reference_ids: list[str]
+    invalid_reference_ids: list[str]
+    retrieved_passages: list[RetrievedPassage]
+    excluded_chunk_ids: list[str]
+    guardrail_events: list[GuardrailEvent] = Field(min_length=1)
+    risk_assessments: list[ClassifierRiskAssessment] = Field(min_length=1)
     generated_output_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     generator_model: str = Field(min_length=1)
     retrieval_model: str = Field(min_length=1)
