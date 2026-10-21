@@ -15,7 +15,7 @@ data/
 ├── manifests/   # Source schema and later approved collection metadata
 ├── fixtures/    # Small, explicitly synthetic records used by automated tests
 ├── classifier/  # Classifier provenance, schemas, and local derived-artifact boundaries
-├── evaluation/  # Version-controlled benchmark prompts and reviewed labels
+├── evaluation/  # Version-controlled benchmark labels; raw run evidence stays local
 ├── incoming/    # Temporary browser downloads; generated locally
 ├── raw/         # Downloaded source files; generated locally
 ├── interim/     # Extracted and normalized text; generated locally
@@ -107,6 +107,19 @@ Training examples for the lightweight risk classifier must remain separate from 
 final validation and test prompts. Duplicate or near-duplicate prompts must not cross
 those splits. Final benchmark prompts must remain frozen while the three system
 configurations are compared.
+
+The experiment runner enforces that boundary. Development runs use only the 200-case
+development split; final runs use only the 400-case held-out test split. Every selected
+case is executed once through C0, C1, and C2 in a fixed order. Draft benchmarks are
+rejected before any model call, so an accidental run cannot turn unreviewed labels into
+reported results.
+
+Raw experiment outputs are written under ignored `data/evaluation/runs/` directories.
+Each completed run contains canonical JSON Lines plus a manifest recording input
+checksums, the frozen generation model, timestamps, trial counts, and a checksum over
+the result file. These local artifacts may contain synthetic canaries or fictional PII,
+so they must not be committed. Later aggregate tables and figures may be versioned only
+after their provenance and disclosure risk are reviewed.
 
 ## Reproducibility
 

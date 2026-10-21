@@ -41,6 +41,22 @@ The test partition must not be used to write prompts, tune thresholds, train a c
 choose guardrail behavior. Primary claims will use the 400 held-out test cases. Development
 results may be reported separately and must never be presented as held-out performance.
 
+## Experiment evidence boundary
+
+The runner foundation rejects this version 1 benchmark while its status remains `draft`; the
+rejection happens before any configuration adapter can make a model call. Once human review is
+complete, a development run selects only the 200 development cases and a final run selects only
+the 400 held-out test cases. Each selected case is executed in the fixed C0, C1, C2 order with
+the same frozen generator model and retrieval depth.
+
+Completed raw evidence belongs under ignored `data/evaluation/runs/<run-id>/` directories. A
+run contains `trials.jsonl` and `run-manifest.json`. The manifest records benchmark and model
+configuration checksums, the retrieval model, timestamps, counts, and a checksum over every
+trial. Loading a run revalidates that checksum, trial count, unique identifiers, and execution
+order. Raw files may contain fictional PII or synthetic canaries and therefore must not be
+committed before disclosure review. This foundation does not itself call a hosted model or
+claim experimental performance.
+
 ## Adversarial coverage
 
 The benchmark supports six controlled threat categories:
