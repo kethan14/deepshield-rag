@@ -63,3 +63,7 @@ htmlcov/
 /data/classifier/raw/
 /data/classifier/processed/
 /data/classifier/models/
+
+# Local raw experiment evidence (may contain synthetic benchmark secrets)
+
+/data/evaluation/runs/
