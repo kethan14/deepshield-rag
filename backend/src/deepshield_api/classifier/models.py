@@ -561,3 +561,115 @@ class RiskDatasetManifest(BaseModel):
             labels = {example.label for example in split_examples}
             if labels != set(RiskLabel):
                 raise ValueError(f"classifier split {split.value} requires both labels")
+
+
+class ClassifierSelectionRules(BaseModel):
+    """Frozen rules for selecting the human-review candidate set."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rules_version: Literal["1.0"] = "1.0"
+    selection_seed: Literal["deepshield-c2-selection-v1"] = "deepshield-c2-selection-v1"
+    benchmark_near_duplicate_token_ngram_size: Literal[3] = 3
+    benchmark_near_duplicate_jaccard_threshold: float = Field(default=0.82, gt=0, le=1)
+    target_split_counts: dict[RiskSplit, int] = Field(
+        default_factory=lambda: {
+            RiskSplit.TRAIN: 500,
+            RiskSplit.VALIDATION: 100,
+            RiskSplit.TEST: 200,
+            RiskSplit.EXTERNAL_TEST: 200,
+        }
+    )
+    balance_binary_labels: Literal[True] = True
+    preserve_groups: Literal[True] = True
+
+    @field_validator("target_split_counts")
+    @classmethod
+    def require_even_positive_split_targets(
+        cls, value: dict[RiskSplit, int]
+    ) -> dict[RiskSplit, int]:
+        if set(value) != set(RiskSplit):
+            raise ValueError("selection targets require all four classifier splits")
+        if any(count <= 0 or count % 2 for count in value.values()):
+            raise ValueError("selection targets must be positive even counts")
+        return value
+
+
+class SelectionSplitSummary(BaseModel):
+    """Selected row and group counts for one classifier split."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    split: RiskSplit
+    target_count: int = Field(ge=2)
+    selected_count: int = Field(ge=2)
+    group_count: int = Field(ge=1)
+    label_counts: dict[RiskLabel, int]
+
+    @field_validator("label_counts")
+    @classmethod
+    def require_both_labels(cls, value: dict[RiskLabel, int]) -> dict[RiskLabel, int]:
+        if set(value) != set(RiskLabel) or any(count <= 0 for count in value.values()):
+            raise ValueError("selection summaries require positive counts for both labels")
+        return value
+
+    @model_validator(mode="after")
+    def require_complete_split_summary(self) -> Self:
+        if self.selected_count < self.target_count:
+            raise ValueError("selected count cannot be below its target")
+        if sum(self.label_counts.values()) != self.selected_count:
+            raise ValueError("selection label counts must sum to selected count")
+        return self
+
+
+class ClassifierSelectionReport(BaseModel):
+    """Auditable evidence for benchmark-safe classifier candidate selection."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    schema_version: Literal["1.0"] = "1.0"
+    report_id: Literal["deepshield-risk-classifier-selection"] = (
+        "deepshield-risk-classifier-selection"
+    )
+    report_version: int = Field(ge=1)
+    created_at: datetime
+    input_dataset_path: Literal["data/classifier/processed/risk-dataset.v1.json"]
+    input_dataset_sha256: Sha256Digest
+    benchmark_path: Literal["data/evaluation/f1-security-benchmark.v1.json"]
+    benchmark_sha256: Sha256Digest
+    benchmark_case_ids_sha256: Sha256Digest
+    benchmark_input_texts_sha256: Sha256Digest
+    benchmark_case_count: int = Field(ge=1)
+    benchmark_input_text_count: int = Field(ge=1)
+    rules: ClassifierSelectionRules
+    input_candidate_count: int = Field(ge=1)
+    exact_benchmark_matches_excluded: int = Field(ge=0)
+    near_benchmark_matches_excluded: int = Field(ge=0)
+    eligible_candidate_count: int = Field(ge=1)
+    selected_dataset_path: Literal["data/classifier/processed/risk-dataset-selected.v1.json"]
+    selected_dataset_sha256: Sha256Digest
+    review_packet_path: Literal["data/classifier/processed/risk-dataset-selection-review.v1.csv"]
+    review_packet_sha256: Sha256Digest
+    splits: list[SelectionSplitSummary] = Field(min_length=4, max_length=4)
+
+    @field_validator("created_at")
+    @classmethod
+    def require_selection_timezone(cls, value: datetime) -> datetime:
+        if value.utcoffset() is None:
+            raise ValueError("created_at must include a timezone")
+        return value
+
+    @model_validator(mode="after")
+    def require_complete_selection_report(self) -> Self:
+        excluded = self.exact_benchmark_matches_excluded + self.near_benchmark_matches_excluded
+        if self.eligible_candidate_count + excluded != self.input_candidate_count:
+            raise ValueError("selection report must account for every input candidate")
+        splits = [summary.split for summary in self.splits]
+        if set(splits) != set(RiskSplit) or len(splits) != len(set(splits)):
+            raise ValueError("selection report requires each split exactly once")
+        if any(
+            summary.target_count != self.rules.target_split_counts[summary.split]
+            for summary in self.splits
+        ):
+            raise ValueError("selection summaries must match the frozen split targets")
+        return self

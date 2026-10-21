@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "report_id": "deepshield-risk-classifier-selection",
+  "report_version": 1,
+  "created_at": "2026-10-20T12:00:00Z",
+  "input_dataset_path": "data/classifier/processed/risk-dataset.v1.json",
+  "input_dataset_sha256": "69bab48103ee256245238f76e052b4a84ef18c9ea8974fd649c06c99af5cb9cd",
+  "benchmark_path": "data/evaluation/f1-security-benchmark.v1.json",
+  "benchmark_sha256": "d578df2443c88fc2f0f6447dae721adb1f1fe53ba6eb84efc3fb27f9ef4fb98d",
+  "benchmark_case_ids_sha256": "13b94cc9879c86c97fa4ed10443e4e5e1c51d2a99066a2776a3482716af85541",
+  "benchmark_input_texts_sha256": "f7aa6f5dc12917d02ae196f374c5741fdd4cdde61fd07686a0e9730a6acd1d43",
+  "benchmark_case_count": 600,
+  "benchmark_input_text_count": 607,
+  "rules": {
+    "rules_version": "1.0",
+    "selection_seed": "deepshield-c2-selection-v1",
+    "benchmark_near_duplicate_token_ngram_size": 3,
+    "benchmark_near_duplicate_jaccard_threshold": 0.82,
+    "target_split_counts": {
+      "train": 500,
+      "validation": 100,
+      "test": 200,
+      "external-test": 200
+    },
+    "balance_binary_labels": true,
+    "preserve_groups": true
+  },
+  "input_candidate_count": 17194,
+  "exact_benchmark_matches_excluded": 0,
+  "near_benchmark_matches_excluded": 0,
+  "eligible_candidate_count": 17194,
+  "selected_dataset_path": "data/classifier/processed/risk-dataset-selected.v1.json",
+  "selected_dataset_sha256": "a331394f5a045b6689ee1f2fe09dc451c127873c5cd1b04d1976c2f00b7811e9",
+  "review_packet_path": "data/classifier/processed/risk-dataset-selection-review.v1.csv",
+  "review_packet_sha256": "03a2826dede2af11adad5c69ef7e799f5e3753cb15e8578f0d8e35a345fb9d90",
+  "splits": [
+    {
+      "split": "train",
+      "target_count": 500,
+      "selected_count": 500,
+      "group_count": 452,
+      "label_counts": {
+        "benign": 250,
+        "adversarial": 250
+      }
+    },
+    {
+      "split": "validation",
+      "target_count": 100,
+      "selected_count": 100,
+      "group_count": 93,
+      "label_counts": {
+        "benign": 50,
+        "adversarial": 50
+      }
+    },
+    {
+      "split": "test",
+      "target_count": 200,
+      "selected_count": 200,
+      "group_count": 189,
+      "label_counts": {
+        "benign": 100,
+        "adversarial": 100
+      }
+    },
+    {
+      "split": "external-test",
+      "target_count": 200,
+      "selected_count": 200,
+      "group_count": 200,
+      "label_counts": {
+        "benign": 100,
+        "adversarial": 100
+      }
+    }
+  ]
+}
