@@ -69,6 +69,12 @@ trusted authorization context, so denial is enforced rather than inferred from m
 The first retrieval for a case is cached and replayed to the remaining configurations, removing
 retrieval variation from the C0/C1/C2 comparison and avoiding repeated embedding work.
 
+The execution CLI performs a static preflight before constructing any runtime component. It
+requires a frozen benchmark, valid corpus references, the pinned generation configuration, a
+new run identifier, and explicit acknowledgement of potential provider charges. Final held-out
+execution has a second confirmation flag. This makes validation and CI safe to run without
+silently contacting a model provider.
+
 ## Adversarial coverage
 
 The benchmark supports six controlled threat categories:
@@ -156,3 +162,14 @@ a benchmark whose status is `frozen`:
 uv run --project backend --no-sync python -m deepshield_api.evaluation.cli validate `
   data/evaluation/f1-security-benchmark.v1.json --repository-root . --require-frozen
 ```
+
+After review and freezing, execute the development split with:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli run `
+  --repository-root . --purpose development `
+  --run-id development-v1 --confirm-paid-run
+```
+
+The final test split uses `--purpose final` and also requires `--confirm-held-out-test`. Do not
+run it while tuning prompts, thresholds, or guardrails.

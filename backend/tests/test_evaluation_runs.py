@@ -5,6 +5,7 @@ from typing import Literal
 
 import pytest
 
+from deepshield_api.evaluation import cli as evaluation_cli
 from deepshield_api.evaluation.generation import build_draft_benchmark
 from deepshield_api.evaluation.models import (
     BenchmarkCase,
@@ -21,6 +22,7 @@ from deepshield_api.evaluation.runs import (
     TrialObservation,
     execute_frozen_experiment,
     load_completed_run,
+    prepare_experiment_inputs,
     write_completed_run,
 )
 from deepshield_api.evaluation.synthetic import build_synthetic_environment
@@ -203,3 +205,116 @@ def test_loader_detects_result_tampering(tmp_path: Path) -> None:
 
     with pytest.raises(ExperimentRunError, match="unable to load|checksum"):
         load_completed_run(run_directory)
+
+
+def test_preflight_exposes_validated_split_without_initializing_backends(tmp_path: Path) -> None:
+    prepared = prepare_experiment_inputs(
+        repository_root=REPOSITORY_ROOT,
+        benchmark_path=_frozen_benchmark(tmp_path),
+        generation_configuration_path=GENERATION_PATH,
+        purpose=ExperimentPurpose.DEVELOPMENT,
+    )
+
+    assert prepared.repository_root == REPOSITORY_ROOT
+    assert prepared.benchmark.status is BenchmarkStatus.FROZEN
+    assert prepared.generation.model == "gpt-5.4-mini-2026-03-17"
+    assert prepared.selected_case_count == 200
+
+
+def test_run_cli_rejects_draft_before_runtime_construction(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def unexpected_runtime(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("runtime must not be constructed for a draft benchmark")
+
+    monkeypatch.setattr(
+        evaluation_cli,
+        "build_experiment_comparison_backends",
+        unexpected_runtime,
+    )
+
+    result = evaluation_cli.main(
+        [
+            "run",
+            "--repository-root",
+            str(REPOSITORY_ROOT),
+            "--purpose",
+            "development",
+            "--run-id",
+            "draft-cli-run",
+            "--confirm-paid-run",
+        ]
+    )
+
+    assert result == 1
+    assert "benchmark must be frozen" in capsys.readouterr().err
+
+
+def test_run_cli_requires_explicit_confirmations_before_runtime_construction(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    benchmark = _frozen_benchmark(tmp_path)
+
+    def unexpected_runtime(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("runtime must not be constructed before confirmation")
+
+    monkeypatch.setattr(
+        evaluation_cli,
+        "build_experiment_comparison_backends",
+        unexpected_runtime,
+    )
+    common = [
+        "run",
+        "--repository-root",
+        str(REPOSITORY_ROOT),
+        "--benchmark",
+        str(benchmark),
+        "--run-id",
+        "confirmation-test-run",
+    ]
+
+    assert evaluation_cli.main([*common, "--purpose", "development"]) == 1
+    assert "--confirm-paid-run" in capsys.readouterr().err
+    assert evaluation_cli.main([*common, "--purpose", "final", "--confirm-paid-run"]) == 1
+    assert "--confirm-held-out-test" in capsys.readouterr().err
+
+
+def test_run_cli_writes_complete_local_evidence_with_fake_backends(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    benchmark = _frozen_benchmark(tmp_path)
+    runs_root = tmp_path / "runs"
+    monkeypatch.setenv("DEEPSHIELD_LLM_API_KEY", "synthetic-test-key")
+    monkeypatch.setattr(
+        evaluation_cli,
+        "build_experiment_comparison_backends",
+        lambda _settings: tuple(_backends()),
+    )
+
+    result = evaluation_cli.main(
+        [
+            "run",
+            "--repository-root",
+            str(REPOSITORY_ROOT),
+            "--benchmark",
+            str(benchmark),
+            "--runs-root",
+            str(runs_root),
+            "--purpose",
+            "development",
+            "--run-id",
+            "successful-cli-run",
+            "--confirm-paid-run",
+        ]
+    )
+
+    assert result == 0
+    completed = load_completed_run(runs_root / "successful-cli-run")
+    assert completed.manifest.case_count == 200
+    assert completed.manifest.trial_count == 600
+    assert "Completed development experiment" in capsys.readouterr().out

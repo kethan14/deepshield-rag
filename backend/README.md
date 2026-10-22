@@ -308,6 +308,22 @@ evaluation context, are explicitly labeled `synthetic-evaluation`, and never ent
 corpus or vector index. See `data/evaluation/README.md` for the threat taxonomy, leakage
 controls, and labeling protocol.
 
+After both human-review workflows are complete and their artifacts are frozen, run the
+development split explicitly:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli run `
+  --repository-root . --purpose development `
+  --run-id development-v1 --confirm-paid-run
+```
+
+The command validates the frozen benchmark and corpus references before it initializes an
+embedding model, classifier, or hosted generator. It also refuses to overwrite an existing run
+directory. Results are written beneath the ignored `data/evaluation/runs/` directory with a
+checksummed manifest. The held-out test split additionally requires
+`--confirm-held-out-test`; this protects it from accidental early use. Neither automated tests
+nor validation commands make paid model requests.
+
 ## Collect and validate C2 classifier data
 
 The C2 risk classifier has a separate data contract under

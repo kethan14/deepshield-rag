@@ -31,6 +31,7 @@ from deepshield_api.evaluation.models import (
     BenchmarkCase,
     BenchmarkDifficulty,
     BenchmarkKind,
+    BenchmarkManifest,
     BenchmarkSplit,
     BenchmarkStatus,
     ExpectedAction,
@@ -245,6 +246,19 @@ class CompletedExperimentRun:
     results_jsonl: str
 
 
+@dataclass(frozen=True)
+class PreparedExperimentInputs:
+    """Validated immutable inputs that are safe to inspect before runtime construction."""
+
+    repository_root: Path
+    benchmark_path: Path
+    generation_configuration_path: Path
+    benchmark: BenchmarkManifest
+    generation: FixedGenerationConfiguration
+    purpose: ExperimentPurpose
+    selected_case_count: int
+
+
 Clock = Callable[[], datetime]
 Timer = Callable[[], float]
 
@@ -262,23 +276,20 @@ def execute_frozen_experiment(
 ) -> CompletedExperimentRun:
     """Execute one split only after all benchmark and configuration gates pass."""
 
-    root = repository_root.resolve()
-    benchmark_file = _resolve(root, benchmark_path)
-    generation_file = _resolve(root, generation_configuration_path)
-    try:
-        benchmark = load_benchmark_manifest(benchmark_file)
-        generation = load_fixed_generation_configuration(generation_file)
-        validate_corpus_references(benchmark, root)
-    except (BenchmarkManifestError, ExperimentConfigurationError) as exc:
-        raise ExperimentRunError(str(exc)) from exc
-    if benchmark.status is not BenchmarkStatus.FROZEN:
-        raise ExperimentRunError("benchmark must be frozen before any experiment is executed")
+    prepared = prepare_experiment_inputs(
+        repository_root=repository_root,
+        benchmark_path=benchmark_path,
+        generation_configuration_path=generation_configuration_path,
+        purpose=purpose,
+    )
+    benchmark_file = prepared.benchmark_path
+    generation_file = prepared.generation_configuration_path
+    benchmark = prepared.benchmark
+    generation = prepared.generation
 
-    _validate_run_id(run_id)
+    validate_experiment_run_id(run_id)
     ordered_backends = _validate_backends(backends, generation)
     selected_cases = [case for case in benchmark.cases if case.split is purpose.benchmark_split]
-    if not selected_cases:
-        raise ExperimentRunError("the selected benchmark split contains no cases")
 
     now = clock or (lambda: datetime.now(UTC))
     monotonic = timer or perf_counter
@@ -340,6 +351,40 @@ def execute_frozen_experiment(
     )
     _validate_trial_matrix(manifest, trials)
     return CompletedExperimentRun(manifest, tuple(trials), results_jsonl)
+
+
+def prepare_experiment_inputs(
+    *,
+    repository_root: Path,
+    benchmark_path: Path,
+    generation_configuration_path: Path,
+    purpose: ExperimentPurpose,
+) -> PreparedExperimentInputs:
+    """Validate all static experiment gates before models or indexes are initialized."""
+
+    root = repository_root.resolve()
+    benchmark_file = _resolve(root, benchmark_path)
+    generation_file = _resolve(root, generation_configuration_path)
+    try:
+        benchmark = load_benchmark_manifest(benchmark_file)
+        generation = load_fixed_generation_configuration(generation_file)
+        validate_corpus_references(benchmark, root)
+    except (BenchmarkManifestError, ExperimentConfigurationError) as exc:
+        raise ExperimentRunError(str(exc)) from exc
+    if benchmark.status is not BenchmarkStatus.FROZEN:
+        raise ExperimentRunError("benchmark must be frozen before any experiment is executed")
+    selected_case_count = sum(case.split is purpose.benchmark_split for case in benchmark.cases)
+    if selected_case_count == 0:
+        raise ExperimentRunError("the selected benchmark split contains no cases")
+    return PreparedExperimentInputs(
+        repository_root=root,
+        benchmark_path=benchmark_file,
+        generation_configuration_path=generation_file,
+        benchmark=benchmark,
+        generation=generation,
+        purpose=purpose,
+        selected_case_count=selected_case_count,
+    )
 
 
 def render_trials(trials: Sequence[ExperimentTrial]) -> str:
@@ -423,7 +468,9 @@ def _validate_backends(
     return tuple(backends)
 
 
-def _validate_run_id(run_id: str) -> None:
+def validate_experiment_run_id(run_id: str) -> None:
+    """Reject unsafe run-directory identifiers before any model is initialized."""
+
     try:
         TypeAdapter(Slug).validate_python(run_id)
     except ValidationError as exc:
