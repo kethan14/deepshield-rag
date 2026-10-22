@@ -15,7 +15,7 @@ from numpy.typing import NDArray
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, model_validator
 
 from deepshield_api.corpus.chunking import ChunkRecord, load_chunking_report
-from deepshield_api.corpus.models import Sha256Digest, Slug, SourcePublisher
+from deepshield_api.corpus.models import EvidencePublisher, Sha256Digest, Slug
 
 INDEXER_VERSION: Literal["1.0"] = "1.0"
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
@@ -158,7 +158,7 @@ class RetrievalHit(BaseModel):
     chunk_id: str
     source_id: Slug
     title: str
-    publisher: SourcePublisher
+    publisher: EvidencePublisher
     canonical_url: HttpUrl
     char_start: int = Field(ge=0)
     char_end: int = Field(gt=0)

@@ -63,6 +63,7 @@ from deepshield_api.corpus.manifest import (
 )
 from deepshield_api.corpus.models import (
     CollectionStatus,
+    EvidencePublisher,
     SourceDocumentType,
     SourceManifest,
     SourceMediaType,
@@ -79,6 +80,7 @@ __all__ = [
     "CollectionStatus",
     "CollectionError",
     "CollectionPolicy",
+    "EvidencePublisher",
     "ExtractionError",
     "ExtractionPolicy",
     "ExtractionRecord",
