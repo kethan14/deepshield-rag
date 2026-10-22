@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from enum import StrEnum
 from pathlib import PurePosixPath
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, Self, TypeAlias
 
 from pydantic import (
     BaseModel,
@@ -36,6 +36,10 @@ class SourcePublisher(StrEnum):
     ECFR = "ecfr"
     DEPARTMENT_OF_STATE = "department-of-state"
     CBP = "cbp"
+
+
+EvidencePublisher: TypeAlias = SourcePublisher | Literal["synthetic-evaluation"]
+"""Publisher label for official corpus evidence or isolated synthetic test evidence."""
 
 
 class SourceDocumentType(StrEnum):

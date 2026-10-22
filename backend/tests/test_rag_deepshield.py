@@ -152,7 +152,7 @@ def test_c2_excludes_retrieval_detected_only_by_classifier() -> None:
     assert [passage.reference_id for passage in answer.retrieved_passages] == ["S2"]
     assert any(event.code == "classifier-retrieval-risk" for event in answer.guardrail_events)
     payload = json.loads(generator.calls[0][1].split("\n", maxsplit=1)[1])
-    assert [item["reference_id"] for item in payload["official_passages"]] == ["S2"]
+    assert [item["reference_id"] for item in payload["retrieved_passages"]] == ["S2"]
 
 
 def test_c2_refuses_when_classifier_excludes_every_retrieved_passage() -> None:

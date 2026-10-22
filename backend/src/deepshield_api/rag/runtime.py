@@ -20,7 +20,16 @@ from deepshield_api.corpus.indexing import (
     RetrievalHit,
     search_vector_index,
 )
-from deepshield_api.evaluation.synthetic import load_synthetic_environment
+from deepshield_api.evaluation.adapters import (
+    BaselineExperimentBackend,
+    DeepShieldExperimentBackend,
+    HardenedExperimentBackend,
+    build_comparison_backends,
+)
+from deepshield_api.evaluation.synthetic import (
+    SyntheticSafetyEnvironment,
+    load_synthetic_environment,
+)
 from deepshield_api.rag.c2_guardrails import DeterministicC2Guardrails
 from deepshield_api.rag.deepshield import DeepShieldRagService, PortableRiskClassifier
 from deepshield_api.rag.generation import (
@@ -104,22 +113,33 @@ def build_deepshield_rag_service(settings: RagSettings | None = None) -> DeepShi
     """Build C2 only from verified reviewed classifier and synthetic safety artifacts."""
 
     resolved = settings or RagSettings()
-    root = resolved.repository_root.resolve()
-    training_report_path = _under_root(resolved.classifier_training_report, root)
-    model_path = _under_root(resolved.classifier_model_artifact, root)
-    environment_path = _under_root(resolved.synthetic_safety_environment, root)
-    report = load_training_report(training_report_path)
-    validate_training_report(report, root, require_artifacts=True)
-    if (root / report.model_artifact_path).resolve() != model_path:
-        raise RagRuntimeError("configured classifier model does not match training evidence")
-    artifact = load_model_artifact(model_path)
-    environment = load_synthetic_environment(environment_path)
+    classifier, environment = _load_c2_components(resolved)
     retriever, generator = _build_runtime_components(resolved)
     return DeepShieldRagService(
         retriever,
         generator,
-        PortableRiskClassifier(artifact),
+        classifier,
         DeterministicC2Guardrails(environment),
+    )
+
+
+def build_experiment_comparison_backends(
+    settings: RagSettings | None = None,
+) -> tuple[
+    BaselineExperimentBackend,
+    HardenedExperimentBackend,
+    DeepShieldExperimentBackend,
+]:
+    """Build C0/C1/C2 adapters from one verified retriever and generator instance."""
+
+    resolved = settings or RagSettings()
+    classifier, environment = _load_c2_components(resolved)
+    retriever, generator = _build_runtime_components(resolved)
+    return build_comparison_backends(
+        retriever=retriever,
+        generator=generator,
+        classifier=classifier,
+        environment=environment,
     )
 
 
@@ -146,6 +166,22 @@ def _build_runtime_components(
     except (IndexingError, OSError, ValueError) as exc:
         raise RagRuntimeError("unable to initialize the verified local retriever") from exc
     return retriever, generator
+
+
+def _load_c2_components(
+    resolved: RagSettings,
+) -> tuple[PortableRiskClassifier, SyntheticSafetyEnvironment]:
+    root = resolved.repository_root.resolve()
+    training_report_path = _under_root(resolved.classifier_training_report, root)
+    model_path = _under_root(resolved.classifier_model_artifact, root)
+    environment_path = _under_root(resolved.synthetic_safety_environment, root)
+    report = load_training_report(training_report_path)
+    validate_training_report(report, root, require_artifacts=True)
+    if (root / report.model_artifact_path).resolve() != model_path:
+        raise RagRuntimeError("configured classifier model does not match training evidence")
+    artifact = load_model_artifact(model_path)
+    environment = load_synthetic_environment(environment_path)
+    return PortableRiskClassifier(artifact), environment
 
 
 @lru_cache(maxsize=1)

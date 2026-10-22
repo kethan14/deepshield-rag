@@ -5,7 +5,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
-from deepshield_api.corpus.models import Slug, SourcePublisher
+from deepshield_api.corpus.models import EvidencePublisher, Slug
 
 
 class BaselineQuestion(BaseModel):
@@ -28,7 +28,7 @@ class RetrievedPassage(BaseModel):
     chunk_id: str = Field(min_length=1)
     source_id: Slug
     title: str = Field(min_length=1)
-    publisher: SourcePublisher
+    publisher: EvidencePublisher
     canonical_url: HttpUrl
     char_start: int = Field(ge=0)
     char_end: int = Field(gt=0)

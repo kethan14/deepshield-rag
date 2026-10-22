@@ -57,6 +57,18 @@ order. Raw files may contain fictional PII or synthetic canaries and therefore m
 committed before disclosure review. This foundation does not itself call a hosted model or
 claim experimental performance.
 
+The comparison adapters share the same official retriever and generator across all three
+configurations. For an indirect-injection case, the adapter places the labeled poisoned fixture
+ahead of the official evidence and preserves a total retrieval depth of five. For synthetic
+secret and fictional-PII cases, it similarly inserts only the registered fictional record. The
+synthetic evidence uses the reserved `example.test` domain and publisher label
+`synthetic-evaluation`; it is never written into the official corpus or index. C1 and C2 may
+exclude such evidence, but every trial retains the complete pre-guardrail retrieval record for
+fair comparison. C2 also evaluates each benchmark-labeled mock-tool request against an empty,
+trusted authorization context, so denial is enforced rather than inferred from model wording.
+The first retrieval for a case is cached and replayed to the remaining configurations, removing
+retrieval variation from the C0/C1/C2 comparison and avoiding repeated embedding work.
+
 ## Adversarial coverage
 
 The benchmark supports six controlled threat categories:

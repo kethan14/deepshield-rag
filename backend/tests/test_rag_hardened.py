@@ -88,7 +88,7 @@ def test_c1_answers_benign_question_with_validated_evidence() -> None:
     payload = json.loads(serialized)
     assert prefix == "UNTRUSTED_REQUEST_AND_EVIDENCE_JSON"
     assert payload["user_request"] == "Can an F-1 student use CPT?"
-    assert [item["reference_id"] for item in payload["official_passages"]] == ["S1", "S2"]
+    assert [item["reference_id"] for item in payload["retrieved_passages"]] == ["S1", "S2"]
 
 
 def test_c1_blocks_attack_only_input_before_retrieval_or_generation() -> None:
@@ -178,7 +178,7 @@ def test_c1_excludes_injected_retrieval_but_uses_safe_passage() -> None:
     assert [passage.reference_id for passage in answer.retrieved_passages] == ["S2"]
     assert any(event.action is GuardrailAction.EXCLUDE for event in answer.guardrail_events)
     payload = json.loads(generator.calls[0][1].split("\n", maxsplit=1)[1])
-    assert [item["reference_id"] for item in payload["official_passages"]] == ["S2"]
+    assert [item["reference_id"] for item in payload["retrieved_passages"]] == ["S2"]
 
 
 def test_c1_refuses_when_every_retrieved_passage_is_injected() -> None:

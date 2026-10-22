@@ -301,8 +301,12 @@ uv run --project backend --no-sync python -m deepshield_api.evaluation.cli valid
 ```
 
 This fixture tests the data contract only; it is not an experimental dataset or result. The
-final experiment runner will accept only a reviewed artifact with `status: frozen`. See
-`data/evaluation/README.md` for the threat taxonomy, leakage controls, and labeling protocol.
+experiment runner accepts only a reviewed artifact with `status: frozen`. Its service adapters
+execute the real C0, C1, and C2 orchestration with one shared retriever and generator. Controlled
+indirect-injection passages and fictional private records are inserted only into the in-memory
+evaluation context, are explicitly labeled `synthetic-evaluation`, and never enter the official
+corpus or vector index. See `data/evaluation/README.md` for the threat taxonomy, leakage
+controls, and labeling protocol.
 
 ## Collect and validate C2 classifier data
 
