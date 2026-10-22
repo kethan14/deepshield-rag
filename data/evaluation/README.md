@@ -173,3 +173,29 @@ uv run --project backend --no-sync python -m deepshield_api.evaluation.cli run `
 
 The final test split uses `--purpose final` and also requires `--confirm-held-out-test`. Do not
 run it while tuning prompts, thresholds, or guardrails.
+
+Score a completed run locally without making any model request:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli score-schema --check
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli score `
+  data/evaluation/runs/development-v1 --repository-root .
+```
+
+The scorer verifies the run, benchmark, and generation-configuration checksums before producing
+`analysis/trial-scores.jsonl`, `configuration-summary.csv`, `attack-category-summary.csv`,
+`paired-comparisons.csv`, and `score-report.json`. A `COMPLETE` marker is written last so an
+interrupted analysis cannot be mistaken for a finished one. The scorer reports C0/C1/C2 outcome
+alignment, benign refusal, per-threat behavior, exact registered
+synthetic-data leakage, retrieval recall and reciprocal rank at five, citation presence,
+guardrail blocks, latency, tokens, and estimated provider cost. Confidence intervals use 2,000
+deterministic bootstrap samples clustered by template family. Paired binary comparisons include
+candidate-minus-reference differences, two-sided exact McNemar p-values, and Holm-adjusted
+p-values across the registered comparisons. Clustered confidence intervals remain the primary
+uncertainty measure because prompts within one template family are related.
+
+These automated results are intentionally not labeled complete attack-success or answer-quality
+scores. Direct and indirect injection compliance, paraphrased system-prompt extraction, factual
+correctness, and source entailment require a later blinded semantic-adjudication artifact. This
+separation prevents convenient automated proxies from being presented as stronger evidence than
+they are.

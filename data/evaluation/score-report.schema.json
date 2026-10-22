@@ -1,0 +1,608 @@
+{
+  "$defs": {
+    "AttackCategory": {
+      "description": "Threat classes covered by the controlled adversarial benchmark.",
+      "enum": [
+        "direct-prompt-injection",
+        "indirect-prompt-injection",
+        "system-prompt-extraction",
+        "synthetic-secret-exfiltration",
+        "fictional-pii-exfiltration",
+        "unauthorized-tool-action"
+      ],
+      "title": "AttackCategory",
+      "type": "string"
+    },
+    "AttackCategoryScoreSummary": {
+      "additionalProperties": false,
+      "description": "Per-threat comparison row for security tables and figures.",
+      "properties": {
+        "attack_category": {
+          "$ref": "#/$defs/AttackCategory"
+        },
+        "case_count": {
+          "minimum": 1,
+          "title": "Case Count",
+          "type": "integer"
+        },
+        "coarse_action_alignment": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "configuration": {
+          "$ref": "#/$defs/ExperimentConfiguration"
+        },
+        "exact_sensitive_data_leakage_rate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MetricEstimate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "guardrail_block_rate": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "refusal_rate": {
+          "$ref": "#/$defs/MetricEstimate"
+        }
+      },
+      "required": [
+        "configuration",
+        "attack_category",
+        "case_count",
+        "coarse_action_alignment",
+        "refusal_rate",
+        "guardrail_block_rate"
+      ],
+      "title": "AttackCategoryScoreSummary",
+      "type": "object"
+    },
+    "BenchmarkSplit": {
+      "description": "Partitions used for guardrail development and final held-out reporting.",
+      "enum": [
+        "development",
+        "test"
+      ],
+      "title": "BenchmarkSplit",
+      "type": "string"
+    },
+    "ConfigurationScoreSummary": {
+      "additionalProperties": false,
+      "description": "Chart-ready automated metrics for one system configuration.",
+      "properties": {
+        "adversarial_case_count": {
+          "minimum": 1,
+          "title": "Adversarial Case Count",
+          "type": "integer"
+        },
+        "benign_answer_rate": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "benign_case_count": {
+          "minimum": 1,
+          "title": "Benign Case Count",
+          "type": "integer"
+        },
+        "benign_refusal_rate": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "case_count": {
+          "minimum": 1,
+          "title": "Case Count",
+          "type": "integer"
+        },
+        "coarse_action_alignment": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "configuration": {
+          "$ref": "#/$defs/ExperimentConfiguration"
+        },
+        "exact_sensitive_data_leakage_rate": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "guardrail_block_rate": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "latency_ms": {
+          "$ref": "#/$defs/DistributionSummary"
+        },
+        "resources": {
+          "$ref": "#/$defs/ResourceSummary"
+        },
+        "retrieval_mrr_at_5": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "retrieval_recall_at_5": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "valid_citation_fraction": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MetricEstimate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "valid_citation_presence_rate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MetricEstimate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "configuration",
+        "case_count",
+        "benign_case_count",
+        "adversarial_case_count",
+        "coarse_action_alignment",
+        "benign_answer_rate",
+        "benign_refusal_rate",
+        "exact_sensitive_data_leakage_rate",
+        "retrieval_recall_at_5",
+        "retrieval_mrr_at_5",
+        "guardrail_block_rate",
+        "latency_ms",
+        "resources"
+      ],
+      "title": "ConfigurationScoreSummary",
+      "type": "object"
+    },
+    "DistributionSummary": {
+      "additionalProperties": false,
+      "description": "Deterministic distribution summary for system performance measurements.",
+      "properties": {
+        "maximum": {
+          "minimum": 0,
+          "title": "Maximum",
+          "type": "number"
+        },
+        "mean": {
+          "minimum": 0,
+          "title": "Mean",
+          "type": "number"
+        },
+        "median": {
+          "minimum": 0,
+          "title": "Median",
+          "type": "number"
+        },
+        "minimum": {
+          "minimum": 0,
+          "title": "Minimum",
+          "type": "number"
+        },
+        "p95": {
+          "minimum": 0,
+          "title": "P95",
+          "type": "number"
+        },
+        "sample_count": {
+          "minimum": 1,
+          "title": "Sample Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sample_count",
+        "mean",
+        "median",
+        "p95",
+        "minimum",
+        "maximum"
+      ],
+      "title": "DistributionSummary",
+      "type": "object"
+    },
+    "ExperimentConfiguration": {
+      "description": "Comparable system configurations in the preregistered execution order.",
+      "enum": [
+        "C0",
+        "C1",
+        "C2"
+      ],
+      "title": "ExperimentConfiguration",
+      "type": "string"
+    },
+    "ExperimentPurpose": {
+      "description": "Run purpose that prevents development work from touching the held-out test split.",
+      "enum": [
+        "development",
+        "final"
+      ],
+      "title": "ExperimentPurpose",
+      "type": "string"
+    },
+    "MetricEstimate": {
+      "additionalProperties": false,
+      "description": "Cluster-bootstrap estimate for a case-level bounded metric.",
+      "properties": {
+        "bootstrap_iterations": {
+          "default": 2000,
+          "minimum": 1,
+          "title": "Bootstrap Iterations",
+          "type": "integer"
+        },
+        "cluster_count": {
+          "minimum": 1,
+          "title": "Cluster Count",
+          "type": "integer"
+        },
+        "confidence_level": {
+          "default": 0.95,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Confidence Level",
+          "type": "number"
+        },
+        "confidence_lower": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence Lower",
+          "type": "number"
+        },
+        "confidence_upper": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence Upper",
+          "type": "number"
+        },
+        "method": {
+          "const": "template-family-cluster-bootstrap-percentile",
+          "default": "template-family-cluster-bootstrap-percentile",
+          "title": "Method",
+          "type": "string"
+        },
+        "sample_count": {
+          "minimum": 1,
+          "title": "Sample Count",
+          "type": "integer"
+        },
+        "value": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "value",
+        "confidence_lower",
+        "confidence_upper",
+        "sample_count",
+        "cluster_count"
+      ],
+      "title": "MetricEstimate",
+      "type": "object"
+    },
+    "PairedBinaryComparison": {
+      "additionalProperties": false,
+      "description": "Paired case comparison with clustered uncertainty and exact McNemar test.",
+      "properties": {
+        "bootstrap_iterations": {
+          "default": 2000,
+          "minimum": 1,
+          "title": "Bootstrap Iterations",
+          "type": "integer"
+        },
+        "candidate_configuration": {
+          "$ref": "#/$defs/ExperimentConfiguration"
+        },
+        "candidate_only_positive": {
+          "minimum": 0,
+          "title": "Candidate Only Positive",
+          "type": "integer"
+        },
+        "candidate_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Candidate Rate",
+          "type": "number"
+        },
+        "cluster_count": {
+          "minimum": 1,
+          "title": "Cluster Count",
+          "type": "integer"
+        },
+        "confidence_level": {
+          "default": 0.95,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Confidence Level",
+          "type": "number"
+        },
+        "confidence_lower": {
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Confidence Lower",
+          "type": "number"
+        },
+        "confidence_upper": {
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Confidence Upper",
+          "type": "number"
+        },
+        "difference": {
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Difference",
+          "type": "number"
+        },
+        "direction": {
+          "enum": [
+            "higher-is-better",
+            "lower-is-better"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "holm_adjusted_p_value": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Holm Adjusted P Value",
+          "type": "number"
+        },
+        "mcnemar_exact_p_value": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mcnemar Exact P Value",
+          "type": "number"
+        },
+        "metric": {
+          "enum": [
+            "coarse-action-alignment",
+            "benign-refusal",
+            "exact-sensitive-data-leakage"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "reference_configuration": {
+          "$ref": "#/$defs/ExperimentConfiguration"
+        },
+        "reference_only_positive": {
+          "minimum": 0,
+          "title": "Reference Only Positive",
+          "type": "integer"
+        },
+        "reference_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Reference Rate",
+          "type": "number"
+        },
+        "sample_count": {
+          "minimum": 1,
+          "title": "Sample Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "metric",
+        "direction",
+        "reference_configuration",
+        "candidate_configuration",
+        "reference_rate",
+        "candidate_rate",
+        "difference",
+        "confidence_lower",
+        "confidence_upper",
+        "sample_count",
+        "cluster_count",
+        "reference_only_positive",
+        "candidate_only_positive",
+        "mcnemar_exact_p_value",
+        "holm_adjusted_p_value"
+      ],
+      "title": "PairedBinaryComparison",
+      "type": "object"
+    },
+    "ResourceSummary": {
+      "additionalProperties": false,
+      "description": "Provider token and cost evidence without treating missing usage as zero.",
+      "properties": {
+        "complete_cost": {
+          "title": "Complete Cost",
+          "type": "boolean"
+        },
+        "complete_usage_trial_count": {
+          "minimum": 0,
+          "title": "Complete Usage Trial Count",
+          "type": "integer"
+        },
+        "completion_tokens": {
+          "minimum": 0,
+          "title": "Completion Tokens",
+          "type": "integer"
+        },
+        "known_estimated_cost_usd": {
+          "minimum": 0,
+          "title": "Known Estimated Cost Usd",
+          "type": "number"
+        },
+        "missing_usage_trial_count": {
+          "minimum": 0,
+          "title": "Missing Usage Trial Count",
+          "type": "integer"
+        },
+        "prompt_tokens": {
+          "minimum": 0,
+          "title": "Prompt Tokens",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "complete_usage_trial_count",
+        "missing_usage_trial_count",
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "known_estimated_cost_usd",
+        "complete_cost"
+      ],
+      "title": "ResourceSummary",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Reproducible aggregate report that contains no model response text.",
+  "properties": {
+    "attack_category_summaries": {
+      "items": {
+        "$ref": "#/$defs/AttackCategoryScoreSummary"
+      },
+      "title": "Attack Category Summaries",
+      "type": "array"
+    },
+    "attack_category_summary_file": {
+      "const": "attack-category-summary.csv",
+      "default": "attack-category-summary.csv",
+      "title": "Attack Category Summary File",
+      "type": "string"
+    },
+    "attack_category_summary_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Attack Category Summary Sha256",
+      "type": "string"
+    },
+    "benchmark_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Benchmark Sha256",
+      "type": "string"
+    },
+    "benchmark_split": {
+      "$ref": "#/$defs/BenchmarkSplit"
+    },
+    "configuration_summaries": {
+      "items": {
+        "$ref": "#/$defs/ConfigurationScoreSummary"
+      },
+      "title": "Configuration Summaries",
+      "type": "array"
+    },
+    "configuration_summary_file": {
+      "const": "configuration-summary.csv",
+      "default": "configuration-summary.csv",
+      "title": "Configuration Summary File",
+      "type": "string"
+    },
+    "configuration_summary_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Configuration Summary Sha256",
+      "type": "string"
+    },
+    "generation_configuration_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Generation Configuration Sha256",
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "paired_comparison_file": {
+      "const": "paired-comparisons.csv",
+      "default": "paired-comparisons.csv",
+      "title": "Paired Comparison File",
+      "type": "string"
+    },
+    "paired_comparison_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Paired Comparison Sha256",
+      "type": "string"
+    },
+    "paired_comparisons": {
+      "items": {
+        "$ref": "#/$defs/PairedBinaryComparison"
+      },
+      "title": "Paired Comparisons",
+      "type": "array"
+    },
+    "purpose": {
+      "$ref": "#/$defs/ExperimentPurpose"
+    },
+    "results_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Results Sha256",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "run_manifest_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Run Manifest Sha256",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scored_at": {
+      "format": "date-time",
+      "title": "Scored At",
+      "type": "string"
+    },
+    "scoring_methodology_id": {
+      "const": "deepshield-scoring-v1",
+      "default": "deepshield-scoring-v1",
+      "title": "Scoring Methodology Id",
+      "type": "string"
+    },
+    "trial_scores_file": {
+      "const": "trial-scores.jsonl",
+      "default": "trial-scores.jsonl",
+      "title": "Trial Scores File",
+      "type": "string"
+    },
+    "trial_scores_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Trial Scores Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "purpose",
+    "benchmark_split",
+    "run_manifest_sha256",
+    "results_sha256",
+    "benchmark_sha256",
+    "generation_configuration_sha256",
+    "scored_at",
+    "configuration_summaries",
+    "attack_category_summaries",
+    "paired_comparisons",
+    "trial_scores_sha256",
+    "configuration_summary_sha256",
+    "attack_category_summary_sha256",
+    "paired_comparison_sha256",
+    "limitations"
+  ],
+  "title": "ExperimentScoreReport",
+  "type": "object"
+}

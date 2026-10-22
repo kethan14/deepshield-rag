@@ -30,6 +30,13 @@ from deepshield_api.evaluation.runs import (
     validate_experiment_run_id,
     write_completed_run,
 )
+from deepshield_api.evaluation.scoring import (
+    ExperimentScoringError,
+    render_score_report_schema,
+    score_completed_experiment,
+    write_completed_score,
+    write_score_report_schema,
+)
 from deepshield_api.evaluation.synthetic import (
     SyntheticEnvironmentError,
     build_synthetic_environment,
@@ -50,6 +57,7 @@ DEFAULT_AUDIT_PATH = Path("data/evaluation/f1-security-benchmark-audit.v1.json")
 DEFAULT_REVIEW_PATH = Path("data/evaluation/f1-security-benchmark-review.v1.csv")
 DEFAULT_GENERATION_CONFIGURATION_PATH = Path("config/experiments/generation-model.v1.json")
 DEFAULT_RUNS_ROOT = Path("data/evaluation/runs")
+DEFAULT_SCORE_SCHEMA_PATH = Path("data/evaluation/score-report.schema.json")
 
 
 def _resolve_from_root(path: Path, repository_root: Path) -> Path:
@@ -65,6 +73,12 @@ def build_parser() -> argparse.ArgumentParser:
     schema_parser = subparsers.add_parser("schema", help="Export the benchmark schema.")
     schema_parser.add_argument("--output", type=Path, default=DEFAULT_SCHEMA_PATH)
     schema_parser.add_argument("--check", action="store_true")
+
+    score_schema_parser = subparsers.add_parser(
+        "score-schema", help="Export the experiment scoring-report schema."
+    )
+    score_schema_parser.add_argument("--output", type=Path, default=DEFAULT_SCORE_SCHEMA_PATH)
+    score_schema_parser.add_argument("--check", action="store_true")
 
     generate_parser = subparsers.add_parser(
         "generate", help="Generate the deterministic draft benchmark and safety fixtures."
@@ -121,6 +135,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Explicitly authorize the one-time held-out final evaluation.",
     )
+
+    score_parser = subparsers.add_parser(
+        "score", help="Score one completed run without making model calls."
+    )
+    score_parser.add_argument("run_directory", type=Path)
+    score_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    score_parser.add_argument("--benchmark", type=Path, default=DEFAULT_BENCHMARK_PATH)
+    score_parser.add_argument(
+        "--generation-configuration",
+        type=Path,
+        default=DEFAULT_GENERATION_CONFIGURATION_PATH,
+    )
     return parser
 
 
@@ -139,6 +165,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         write_benchmark_manifest_schema(output)
         print(f"Wrote schema: {output}")
+        return 0
+
+    if args.command == "score-schema":
+        output = Path(args.output)
+        expected = render_score_report_schema()
+        if args.check:
+            if not output.is_file() or output.read_text(encoding="utf-8") != expected:
+                print(f"Score schema is missing or out of date: {output}", file=sys.stderr)
+                return 1
+            print(f"Score schema is current: {output}")
+            return 0
+        write_score_report_schema(output)
+        print(f"Wrote score schema: {output}")
         return 0
 
     if args.command == "generate":
@@ -303,6 +342,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Completed {purpose.value} experiment with {completed.manifest.case_count} cases "
             f"and {completed.manifest.trial_count} trials: {run_directory}"
+        )
+        return 0
+
+    if args.command == "score":
+        repository_root = Path(args.repository_root).resolve()
+        run_directory = _resolve_from_root(Path(args.run_directory), repository_root)
+        try:
+            completed_score = score_completed_experiment(
+                repository_root=repository_root,
+                run_directory=run_directory,
+                benchmark_path=Path(args.benchmark),
+                generation_configuration_path=Path(args.generation_configuration),
+            )
+            analysis_directory = write_completed_score(run_directory, completed_score)
+        except (ExperimentScoringError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(
+            f"Scored {len(completed_score.trial_scores)} trials with "
+            f"{len(completed_score.report.paired_comparisons)} paired comparisons: "
+            f"{analysis_directory}"
         )
         return 0
 

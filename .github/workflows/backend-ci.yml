@@ -73,7 +73,9 @@ jobs:
         run: uv run --no-sync pytest --cov=deepshield_api --cov-report=term-missing
 
       - name: Check generated evaluation artifacts
-        run: uv run --no-sync python -m deepshield_api.evaluation.cli generate --repository-root .. --check
+        run: |
+          uv run --no-sync python -m deepshield_api.evaluation.cli generate --repository-root .. --check
+          uv run --no-sync python -m deepshield_api.evaluation.cli score-schema --check --output ../data/evaluation/score-report.schema.json
 
       - name: Confirm generated files are unchanged
         run: git diff --exit-code

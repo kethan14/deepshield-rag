@@ -324,6 +324,19 @@ checksummed manifest. The held-out test split additionally requires
 `--confirm-held-out-test`; this protects it from accidental early use. Neither automated tests
 nor validation commands make paid model requests.
 
+After a run completes, generate deterministic analysis artifacts without contacting the model:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli score `
+  data/evaluation/runs/development-v1 --repository-root .
+```
+
+The analysis includes clustered 95% confidence intervals and paired exact McNemar tests, plus
+chart-ready CSV files for security, retrieval, citation, latency, token, and cost comparisons.
+Exact synthetic leakage is measured automatically; nuanced injection success, factual quality,
+and source entailment remain explicitly pending blinded semantic review rather than being
+overstated through keyword proxies.
+
 ## Collect and validate C2 classifier data
 
 The C2 risk classifier has a separate data contract under
