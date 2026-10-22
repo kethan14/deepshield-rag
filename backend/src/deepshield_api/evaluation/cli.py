@@ -22,6 +22,14 @@ from deepshield_api.evaluation.manifest import (
     write_benchmark_manifest_schema,
 )
 from deepshield_api.evaluation.models import BenchmarkStatus
+from deepshield_api.evaluation.runs import (
+    ExperimentPurpose,
+    ExperimentRunError,
+    execute_frozen_experiment,
+    prepare_experiment_inputs,
+    validate_experiment_run_id,
+    write_completed_run,
+)
 from deepshield_api.evaluation.synthetic import (
     SyntheticEnvironmentError,
     build_synthetic_environment,
@@ -29,12 +37,19 @@ from deepshield_api.evaluation.synthetic import (
     render_synthetic_environment,
     write_synthetic_environment,
 )
+from deepshield_api.rag.runtime import (
+    RagRuntimeError,
+    RagSettings,
+    build_experiment_comparison_backends,
+)
 
 DEFAULT_SCHEMA_PATH = Path("data/evaluation/benchmark-manifest.schema.json")
 DEFAULT_BENCHMARK_PATH = Path("data/evaluation/f1-security-benchmark.v1.json")
 DEFAULT_ENVIRONMENT_PATH = Path("data/evaluation/synthetic-safety-environment.v1.json")
 DEFAULT_AUDIT_PATH = Path("data/evaluation/f1-security-benchmark-audit.v1.json")
 DEFAULT_REVIEW_PATH = Path("data/evaluation/f1-security-benchmark-review.v1.csv")
+DEFAULT_GENERATION_CONFIGURATION_PATH = Path("config/experiments/generation-model.v1.json")
+DEFAULT_RUNS_ROOT = Path("data/evaluation/runs")
 
 
 def _resolve_from_root(path: Path, repository_root: Path) -> Path:
@@ -79,6 +94,32 @@ def build_parser() -> argparse.ArgumentParser:
         "--require-frozen",
         action="store_true",
         help="Reject draft benchmarks that are not ready for final experiments.",
+    )
+
+    run_parser = subparsers.add_parser(
+        "run", help="Execute one frozen benchmark split through C0, C1, and C2."
+    )
+    run_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    run_parser.add_argument("--benchmark", type=Path, default=DEFAULT_BENCHMARK_PATH)
+    run_parser.add_argument(
+        "--generation-configuration",
+        type=Path,
+        default=DEFAULT_GENERATION_CONFIGURATION_PATH,
+    )
+    run_parser.add_argument("--runs-root", type=Path, default=DEFAULT_RUNS_ROOT)
+    run_parser.add_argument(
+        "--purpose", choices=[item.value for item in ExperimentPurpose], required=True
+    )
+    run_parser.add_argument("--run-id", required=True)
+    run_parser.add_argument(
+        "--confirm-paid-run",
+        action="store_true",
+        help="Acknowledge that the configured generator may incur provider charges.",
+    )
+    run_parser.add_argument(
+        "--confirm-held-out-test",
+        action="store_true",
+        help="Explicitly authorize the one-time held-out final evaluation.",
     )
     return parser
 
@@ -205,6 +246,63 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Benchmark audit passed for {report.total_cases} cases; maximum cross-split "
             f"similarity {report.maximum_cross_split_similarity:.4f}."
+        )
+        return 0
+
+    if args.command == "run":
+        repository_root = Path(args.repository_root).resolve()
+        purpose = ExperimentPurpose(args.purpose)
+        benchmark_path = Path(args.benchmark)
+        generation_path = Path(args.generation_configuration)
+        runs_root = _resolve_from_root(Path(args.runs_root), repository_root)
+        try:
+            validate_experiment_run_id(args.run_id)
+            prepared = prepare_experiment_inputs(
+                repository_root=repository_root,
+                benchmark_path=benchmark_path,
+                generation_configuration_path=generation_path,
+                purpose=purpose,
+            )
+            if not args.confirm_paid_run:
+                raise ExperimentRunError(
+                    "refusing to execute without --confirm-paid-run; preflight made no model calls"
+                )
+            if purpose is ExperimentPurpose.FINAL and not args.confirm_held_out_test:
+                raise ExperimentRunError(
+                    "final evaluation requires --confirm-held-out-test to protect the held-out split"
+                )
+            if (runs_root / args.run_id).exists():
+                raise ExperimentRunError(
+                    f"refusing to replace existing experiment run: {runs_root / args.run_id}"
+                )
+            settings = RagSettings(
+                repository_root=repository_root,
+                llm_base_url=str(prepared.generation.base_url),
+                llm_model=prepared.generation.model,
+                llm_max_output_tokens=prepared.generation.max_completion_tokens,
+                llm_reasoning_effort=prepared.generation.reasoning_effort,
+                llm_max_token_parameter="max_completion_tokens",
+            )
+            if settings.llm_api_key is None or not settings.llm_api_key.get_secret_value().strip():
+                raise ExperimentRunError(
+                    "DEEPSHIELD_LLM_API_KEY is required for the frozen hosted-model experiment"
+                )
+            backends = build_experiment_comparison_backends(settings)
+            completed = execute_frozen_experiment(
+                repository_root=repository_root,
+                benchmark_path=benchmark_path,
+                generation_configuration_path=generation_path,
+                purpose=purpose,
+                run_id=args.run_id,
+                backends=backends,
+            )
+            run_directory = write_completed_run(runs_root, completed)
+        except (ExperimentRunError, RagRuntimeError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(
+            f"Completed {purpose.value} experiment with {completed.manifest.case_count} cases "
+            f"and {completed.manifest.trial_count} trials: {run_directory}"
         )
         return 0
 

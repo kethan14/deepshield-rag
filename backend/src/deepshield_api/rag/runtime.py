@@ -9,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from deepshield_api.classifier.training import (
     DEFAULT_MODEL_ARTIFACT,
     DEFAULT_TRAINING_REPORT,
+    ClassifierTrainingError,
     load_model_artifact,
     load_training_report,
     validate_training_report,
@@ -27,6 +28,7 @@ from deepshield_api.evaluation.adapters import (
     build_comparison_backends,
 )
 from deepshield_api.evaluation.synthetic import (
+    SyntheticEnvironmentError,
     SyntheticSafetyEnvironment,
     load_synthetic_environment,
 )
@@ -175,12 +177,17 @@ def _load_c2_components(
     training_report_path = _under_root(resolved.classifier_training_report, root)
     model_path = _under_root(resolved.classifier_model_artifact, root)
     environment_path = _under_root(resolved.synthetic_safety_environment, root)
-    report = load_training_report(training_report_path)
-    validate_training_report(report, root, require_artifacts=True)
-    if (root / report.model_artifact_path).resolve() != model_path:
-        raise RagRuntimeError("configured classifier model does not match training evidence")
-    artifact = load_model_artifact(model_path)
-    environment = load_synthetic_environment(environment_path)
+    try:
+        report = load_training_report(training_report_path)
+        validate_training_report(report, root, require_artifacts=True)
+        if (root / report.model_artifact_path).resolve() != model_path:
+            raise RagRuntimeError("configured classifier model does not match training evidence")
+        artifact = load_model_artifact(model_path)
+        environment = load_synthetic_environment(environment_path)
+    except RagRuntimeError:
+        raise
+    except (ClassifierTrainingError, SyntheticEnvironmentError, OSError, ValueError) as exc:
+        raise RagRuntimeError("unable to initialize verified C2 experiment artifacts") from exc
     return PortableRiskClassifier(artifact), environment
 
 
