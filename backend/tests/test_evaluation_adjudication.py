@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import io
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -7,6 +8,15 @@ from typing import Literal
 
 import pytest
 
+from deepshield_api.corpus.chunking import (
+    ChunkingSourceSummary,
+    ChunkRecord,
+    load_chunking_report,
+    render_chunk_dataset,
+    render_chunking_report,
+)
+from deepshield_api.corpus.manifest import load_source_manifest
+from deepshield_api.corpus.models import SourceRecord
 from deepshield_api.evaluation import cli as evaluation_cli
 from deepshield_api.evaluation.adjudication import (
     PRIVATE_FIXTURE_PLACEHOLDER,
@@ -117,9 +127,9 @@ class AdjudicationBackend:
 
 
 @pytest.fixture(scope="module")
-def completed_run(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]:
+def completed_run(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path, Path]:
     root = tmp_path_factory.mktemp("adjudication-run")
-    draft = load_benchmark_manifest(REPOSITORY_ROOT / BENCHMARK_PATH)
+    draft = _build_test_repository(root)
     reviewed_at = datetime(2026, 10, 22, 0, 0, tzinfo=UTC)
     frozen = BenchmarkManifest.model_validate(
         {
@@ -137,11 +147,12 @@ def completed_run(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]
             ],
         }
     )
-    frozen_path = root / "frozen-benchmark.json"
+    frozen_path = root / BENCHMARK_PATH
+    frozen_path.parent.mkdir(parents=True, exist_ok=True)
     frozen_path.write_text(frozen.model_dump_json(indent=2), encoding="utf-8")
-    generation = load_fixed_generation_configuration(REPOSITORY_ROOT / GENERATION_PATH)
+    generation = load_fixed_generation_configuration(root / GENERATION_PATH)
     completed = execute_frozen_experiment(
-        repository_root=REPOSITORY_ROOT,
+        repository_root=root,
         benchmark_path=frozen_path,
         generation_configuration_path=GENERATION_PATH,
         purpose=ExperimentPurpose.DEVELOPMENT,
@@ -151,20 +162,20 @@ def completed_run(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]
             for configuration in ExperimentConfiguration
         ],
     )
-    return write_completed_run(root / "runs", completed), frozen_path
+    return root, write_completed_run(root / "runs", completed), frozen_path
 
 
 def test_package_is_deterministic_blinded_and_stratified(
-    completed_run: tuple[Path, Path],
+    completed_run: tuple[Path, Path, Path],
 ) -> None:
-    run_directory, benchmark_path = completed_run
+    repository_root, run_directory, benchmark_path = completed_run
     first = prepare_adjudication_package(
-        repository_root=REPOSITORY_ROOT,
+        repository_root=repository_root,
         run_directory=run_directory,
         benchmark_path=benchmark_path,
     )
     second = prepare_adjudication_package(
-        repository_root=REPOSITORY_ROOT,
+        repository_root=repository_root,
         run_directory=run_directory,
         benchmark_path=benchmark_path,
     )
@@ -193,13 +204,13 @@ def test_package_is_deterministic_blinded_and_stratified(
 
 
 def test_writer_is_no_overwrite_and_schema_is_current(
-    completed_run: tuple[Path, Path],
+    completed_run: tuple[Path, Path, Path],
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    run_directory, benchmark_path = completed_run
+    repository_root, run_directory, benchmark_path = completed_run
     package = prepare_adjudication_package(
-        repository_root=REPOSITORY_ROOT,
+        repository_root=repository_root,
         run_directory=run_directory,
         benchmark_path=benchmark_path,
     )
@@ -220,12 +231,12 @@ def test_writer_is_no_overwrite_and_schema_is_current(
 
 
 def test_complete_labels_validate_with_packet_applicability(
-    completed_run: tuple[Path, Path],
+    completed_run: tuple[Path, Path, Path],
     tmp_path: Path,
 ) -> None:
-    run_directory, benchmark_path = completed_run
+    repository_root, run_directory, benchmark_path = completed_run
     package = prepare_adjudication_package(
-        repository_root=REPOSITORY_ROOT,
+        repository_root=repository_root,
         run_directory=run_directory,
         benchmark_path=benchmark_path,
     )
@@ -246,11 +257,11 @@ def test_complete_labels_validate_with_packet_applicability(
 
 
 def test_labels_reject_inapplicable_decision(
-    completed_run: tuple[Path, Path], tmp_path: Path
+    completed_run: tuple[Path, Path, Path], tmp_path: Path
 ) -> None:
-    run_directory, benchmark_path = completed_run
+    repository_root, run_directory, benchmark_path = completed_run
     package = prepare_adjudication_package(
-        repository_root=REPOSITORY_ROOT,
+        repository_root=repository_root,
         run_directory=run_directory,
         benchmark_path=benchmark_path,
     )
@@ -272,8 +283,8 @@ def test_labels_reject_inapplicable_decision(
         validate_completed_labels(packet_path=packet_path, labels_path=invalid_path)
 
 
-def test_prepare_cli_writes_once(completed_run: tuple[Path, Path], tmp_path: Path) -> None:
-    run_directory, benchmark_path = completed_run
+def test_prepare_cli_writes_once(completed_run: tuple[Path, Path, Path], tmp_path: Path) -> None:
+    repository_root, run_directory, benchmark_path = completed_run
     copied_run = tmp_path / "run"
     copied_run.mkdir()
     for name in ("run-manifest.json", "trials.jsonl"):
@@ -282,13 +293,96 @@ def test_prepare_cli_writes_once(completed_run: tuple[Path, Path], tmp_path: Pat
         "adjudication-prepare",
         str(copied_run),
         "--repository-root",
-        str(REPOSITORY_ROOT),
+        str(repository_root),
         "--benchmark",
         str(benchmark_path),
     ]
 
     assert evaluation_cli.main(arguments) == 0
     assert evaluation_cli.main(arguments) == 1
+
+
+def _build_test_repository(root: Path) -> BenchmarkManifest:
+    draft = load_benchmark_manifest(REPOSITORY_ROOT / BENCHMARK_PATH)
+    source_manifest_source = REPOSITORY_ROOT / draft.corpus_manifest_path
+    source_manifest_target = root / draft.corpus_manifest_path
+    source_manifest_target.parent.mkdir(parents=True, exist_ok=True)
+    source_manifest_target.write_bytes(source_manifest_source.read_bytes())
+    source_manifest = load_source_manifest(source_manifest_target)
+    sources = {
+        (source.source_id, source.document_version): source for source in source_manifest.sources
+    }
+
+    report_source = REPOSITORY_ROOT / draft.chunking_report_path
+    report = load_chunking_report(report_source)
+    chunks = [
+        chunk
+        for summary in report.sources
+        for chunk in _fixture_chunks(
+            summary, sources[(summary.source_id, summary.document_version)]
+        )
+    ]
+    chunk_bytes = render_chunk_dataset(chunks)
+    chunks_target = root / report.chunks_path
+    chunks_target.parent.mkdir(parents=True, exist_ok=True)
+    chunks_target.write_bytes(chunk_bytes)
+    fixture_report = report.model_copy(
+        update={"chunks_sha256": hashlib.sha256(chunk_bytes).hexdigest()}
+    )
+    report_target = root / draft.chunking_report_path
+    report_target.write_text(render_chunking_report(fixture_report), encoding="utf-8")
+
+    generation_target = root / GENERATION_PATH
+    generation_target.parent.mkdir(parents=True, exist_ok=True)
+    generation_target.write_bytes((REPOSITORY_ROOT / GENERATION_PATH).read_bytes())
+    return BenchmarkManifest.model_validate(
+        {
+            **draft.model_dump(mode="python"),
+            "chunking_report_sha256": hashlib.sha256(report_target.read_bytes()).hexdigest(),
+        }
+    )
+
+
+def _fixture_chunks(summary: ChunkingSourceSummary, source: SourceRecord) -> list[ChunkRecord]:
+    assert source.sha256 is not None
+    lengths = _fixture_lengths(summary)
+    chunks = []
+    for index, length in enumerate(lengths):
+        chunk_id = f"{summary.source_id}-v{summary.document_version}-c{index:05d}"
+        prefix = f"Authoritative fixture evidence for {chunk_id}. "
+        text = (prefix + "x" * length)[:length]
+        chunks.append(
+            ChunkRecord(
+                chunk_id=chunk_id,
+                source_id=summary.source_id,
+                document_version=summary.document_version,
+                chunk_index=index,
+                title=source.title,
+                publisher=source.publisher,
+                canonical_url=source.canonical_url,
+                document_type=source.document_type,
+                scope_tags=source.scope_tags,
+                raw_sha256=source.sha256,
+                extracted_sha256=summary.extracted_sha256,
+                char_start=0,
+                char_end=len(text),
+                character_count=len(text),
+                text_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                text=text,
+            )
+        )
+    return chunks
+
+
+def _fixture_lengths(summary: ChunkingSourceSummary) -> list[int]:
+    lengths = [summary.min_chunk_characters] * summary.chunk_count
+    remaining = summary.chunk_character_count - sum(lengths)
+    for index in range(summary.chunk_count):
+        addition = min(remaining, summary.max_chunk_characters - lengths[index])
+        lengths[index] += addition
+        remaining -= addition
+    assert remaining == 0
+    return lengths
 
 
 def _completed_labels(items: list[AdjudicationPacketItem]) -> str:

@@ -526,6 +526,12 @@ def _load_verified_chunks(
         if chunks_sha256 != report.chunks_sha256:
             raise AdjudicationError("chunk dataset checksum does not match the chunking report")
         chunks = load_chunk_dataset(chunks_path)
+        if len(chunks) != report.total_chunks:
+            raise AdjudicationError("chunk dataset count does not match the chunking report")
+        if sum(item.character_count for item in chunks) != report.total_chunk_characters:
+            raise AdjudicationError(
+                "chunk dataset character count does not match the chunking report"
+            )
     except (ChunkingError, IndexingError, ValueError) as exc:
         raise AdjudicationError(str(exc)) from exc
     return chunks, report_sha256, chunks_sha256
