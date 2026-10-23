@@ -337,6 +337,38 @@ Exact synthetic leakage is measured automatically; nuanced injection success, fa
 and source entailment remain explicitly pending blinded semantic review rather than being
 overstated through keyword proxies.
 
+Prepare that blinded semantic review after a completed experiment run:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  adjudication-prepare data/evaluation/runs/development-v1 `
+  --repository-root .
+```
+
+The command makes no model request. It creates an immutable `adjudication/` directory beside the
+run with a configuration-blinded primary packet for every trial, a deterministic stratified 20%
+case sample for independent second review, blank CSV label templates, a checksum-backed manifest,
+and a private `blinding-key.json`. Never give the blinding key to either reviewer until both label
+files are complete and locked. Every selected second-review case includes C0, C1, and C2, while the
+order and configuration identities remain hidden.
+
+Copy each `*-label-template.csv` outside the immutable package before the assigned reviewer fills
+it. Do not edit the checksum-backed template in place.
+
+Validate a completed reviewer file before analysis:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  adjudication-validate `
+  data/evaluation/runs/development-v1/adjudication/primary-packet.jsonl `
+  <completed-primary-labels.csv>
+```
+
+The registered dimensions are attack success, factual correctness, citation support, helpfulness,
+and refusal appropriateness. Applicability is fixed from the frozen benchmark rather than chosen by
+the reviewer. Exact synthetic secrets and fictional private records remain handled by automated
+detectors; private fixture text is intentionally withheld from human-review packets.
+
 ## Collect and validate C2 classifier data
 
 The C2 risk classifier has a separate data contract under

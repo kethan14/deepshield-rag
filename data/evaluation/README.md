@@ -199,3 +199,45 @@ scores. Direct and indirect injection compliance, paraphrased system-prompt extr
 correctness, and source entailment require a later blinded semantic-adjudication artifact. This
 separation prevents convenient automated proxies from being presented as stronger evidence than
 they are.
+
+## Blinded semantic adjudication
+
+After a run is complete, prepare the human-review package without making model calls:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  adjudication-schema --check
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  adjudication-prepare data/evaluation/runs/development-v1 `
+  --repository-root .
+```
+
+The package is written to the ignored run directory as:
+
+- `primary-packet.jsonl`: every trial in deterministic random order;
+- `secondary-packet.jsonl`: an exact 20% stratified case sample, with all three configurations for
+  each selected case;
+- `primary-label-template.csv` and `secondary-label-template.csv`: blank registered templates that
+  reviewers copy outside the immutable package before filling;
+- `blinding-key.json`: the private item-to-configuration mapping;
+- `adjudication-manifest.json`: input and output checksums; and
+- `COMPLETE`: a last-written completion marker.
+
+Reviewers see prompts, responses, required facts, and retrieved evidence, but not configuration,
+model, guardrail events, trial IDs, or case IDs. The blinding key must remain unavailable until both
+independent submissions are locked. Response style can still indirectly suggest a defense, so this
+is configuration blinding rather than a claim of perfect masking.
+
+Five dimensions are registered: attack success, factual correctness, citation support,
+helpfulness, and refusal appropriateness. The packet fixes which dimensions are applicable from the
+frozen benchmark. A completed label file must use one reviewer ID, contain exactly one row per
+assigned item, and use `not-applicable` only where the packet requires it. Validate it with:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  adjudication-validate <packet.jsonl> <completed-labels.csv>
+```
+
+Do not edit the packet, manifest, or blinding key after reviewers begin. Disagreement resolution,
+inter-rater reliability, and final unblinded semantic summaries are performed only after both
+validated reviewer files are frozen.

@@ -5,6 +5,14 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from deepshield_api.evaluation.adjudication import (
+    AdjudicationError,
+    prepare_adjudication_package,
+    render_adjudication_manifest_schema,
+    validate_completed_labels,
+    write_adjudication_manifest_schema,
+    write_adjudication_package,
+)
 from deepshield_api.evaluation.audit import (
     audit_benchmark,
     render_audit_report,
@@ -58,6 +66,7 @@ DEFAULT_REVIEW_PATH = Path("data/evaluation/f1-security-benchmark-review.v1.csv"
 DEFAULT_GENERATION_CONFIGURATION_PATH = Path("config/experiments/generation-model.v1.json")
 DEFAULT_RUNS_ROOT = Path("data/evaluation/runs")
 DEFAULT_SCORE_SCHEMA_PATH = Path("data/evaluation/score-report.schema.json")
+DEFAULT_ADJUDICATION_SCHEMA_PATH = Path("data/evaluation/adjudication-manifest.schema.json")
 
 
 def _resolve_from_root(path: Path, repository_root: Path) -> Path:
@@ -79,6 +88,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     score_schema_parser.add_argument("--output", type=Path, default=DEFAULT_SCORE_SCHEMA_PATH)
     score_schema_parser.add_argument("--check", action="store_true")
+
+    adjudication_schema_parser = subparsers.add_parser(
+        "adjudication-schema", help="Export the blinded-adjudication manifest schema."
+    )
+    adjudication_schema_parser.add_argument(
+        "--output", type=Path, default=DEFAULT_ADJUDICATION_SCHEMA_PATH
+    )
+    adjudication_schema_parser.add_argument("--check", action="store_true")
 
     generate_parser = subparsers.add_parser(
         "generate", help="Generate the deterministic draft benchmark and safety fixtures."
@@ -147,6 +164,21 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_GENERATION_CONFIGURATION_PATH,
     )
+
+    adjudication_parser = subparsers.add_parser(
+        "adjudication-prepare",
+        help="Prepare configuration-blinded human-review packets for one completed run.",
+    )
+    adjudication_parser.add_argument("run_directory", type=Path)
+    adjudication_parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    adjudication_parser.add_argument("--benchmark", type=Path, default=DEFAULT_BENCHMARK_PATH)
+
+    labels_parser = subparsers.add_parser(
+        "adjudication-validate",
+        help="Validate one completed reviewer CSV against its blinded packet.",
+    )
+    labels_parser.add_argument("packet", type=Path)
+    labels_parser.add_argument("labels", type=Path)
     return parser
 
 
@@ -178,6 +210,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         write_score_report_schema(output)
         print(f"Wrote score schema: {output}")
+        return 0
+
+    if args.command == "adjudication-schema":
+        output = Path(args.output)
+        expected = render_adjudication_manifest_schema()
+        if args.check:
+            if not output.is_file() or output.read_text(encoding="utf-8") != expected:
+                print(f"Adjudication schema is missing or out of date: {output}", file=sys.stderr)
+                return 1
+            print(f"Adjudication schema is current: {output}")
+            return 0
+        write_adjudication_manifest_schema(output)
+        print(f"Wrote adjudication schema: {output}")
         return 0
 
     if args.command == "generate":
@@ -363,6 +408,41 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"Scored {len(completed_score.trial_scores)} trials with "
             f"{len(completed_score.report.paired_comparisons)} paired comparisons: "
             f"{analysis_directory}"
+        )
+        return 0
+
+    if args.command == "adjudication-prepare":
+        repository_root = Path(args.repository_root).resolve()
+        run_directory = _resolve_from_root(Path(args.run_directory), repository_root)
+        try:
+            completed_package = prepare_adjudication_package(
+                repository_root=repository_root,
+                run_directory=run_directory,
+                benchmark_path=Path(args.benchmark),
+            )
+            output = write_adjudication_package(run_directory, completed_package)
+        except (AdjudicationError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(
+            f"Prepared {completed_package.manifest.item_count} blinded items and "
+            f"{completed_package.manifest.secondary_item_count} independent second-review "
+            f"assignments: {output}"
+        )
+        return 0
+
+    if args.command == "adjudication-validate":
+        try:
+            completed_labels = validate_completed_labels(
+                packet_path=Path(args.packet),
+                labels_path=Path(args.labels),
+            )
+        except (AdjudicationError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(
+            f"Validated {len(completed_labels.labels)} labels from reviewer "
+            f"{completed_labels.reviewer_id}."
         )
         return 0
 

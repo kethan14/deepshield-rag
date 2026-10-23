@@ -1,0 +1,213 @@
+{
+  "$defs": {
+    "BenchmarkSplit": {
+      "description": "Partitions used for guardrail development and final held-out reporting.",
+      "enum": [
+        "development",
+        "test"
+      ],
+      "title": "BenchmarkSplit",
+      "type": "string"
+    },
+    "ExperimentPurpose": {
+      "description": "Run purpose that prevents development work from touching the held-out test split.",
+      "enum": [
+        "development",
+        "final"
+      ],
+      "title": "ExperimentPurpose",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Checksum-backed contract for one blinded semantic review package.",
+  "properties": {
+    "benchmark_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Benchmark Sha256",
+      "type": "string"
+    },
+    "benchmark_split": {
+      "$ref": "#/$defs/BenchmarkSplit"
+    },
+    "blinding_key_file": {
+      "const": "blinding-key.json",
+      "default": "blinding-key.json",
+      "title": "Blinding Key File",
+      "type": "string"
+    },
+    "blinding_key_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Blinding Key Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "minimum": 1,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "chunking_report_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Chunking Report Sha256",
+      "type": "string"
+    },
+    "chunks_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Chunks Sha256",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "dimensions": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "instructions": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 3,
+      "title": "Instructions",
+      "type": "array"
+    },
+    "item_count": {
+      "minimum": 1,
+      "title": "Item Count",
+      "type": "integer"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "primary_label_template_file": {
+      "const": "primary-label-template.csv",
+      "default": "primary-label-template.csv",
+      "title": "Primary Label Template File",
+      "type": "string"
+    },
+    "primary_label_template_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Primary Label Template Sha256",
+      "type": "string"
+    },
+    "primary_packet_file": {
+      "const": "primary-packet.jsonl",
+      "default": "primary-packet.jsonl",
+      "title": "Primary Packet File",
+      "type": "string"
+    },
+    "primary_packet_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Primary Packet Sha256",
+      "type": "string"
+    },
+    "protocol_id": {
+      "const": "deepshield-blinded-adjudication-v1",
+      "default": "deepshield-blinded-adjudication-v1",
+      "title": "Protocol Id",
+      "type": "string"
+    },
+    "purpose": {
+      "$ref": "#/$defs/ExperimentPurpose"
+    },
+    "results_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Results Sha256",
+      "type": "string"
+    },
+    "run_id": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "run_manifest_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Run Manifest Sha256",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "secondary_case_count": {
+      "minimum": 1,
+      "title": "Secondary Case Count",
+      "type": "integer"
+    },
+    "secondary_item_count": {
+      "minimum": 1,
+      "title": "Secondary Item Count",
+      "type": "integer"
+    },
+    "secondary_label_template_file": {
+      "const": "secondary-label-template.csv",
+      "default": "secondary-label-template.csv",
+      "title": "Secondary Label Template File",
+      "type": "string"
+    },
+    "secondary_label_template_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Secondary Label Template Sha256",
+      "type": "string"
+    },
+    "secondary_packet_file": {
+      "const": "secondary-packet.jsonl",
+      "default": "secondary-packet.jsonl",
+      "title": "Secondary Packet File",
+      "type": "string"
+    },
+    "secondary_packet_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Secondary Packet Sha256",
+      "type": "string"
+    },
+    "secondary_review_fraction": {
+      "exclusiveMaximum": 1,
+      "exclusiveMinimum": 0,
+      "title": "Secondary Review Fraction",
+      "type": "number"
+    }
+  },
+  "required": [
+    "run_id",
+    "purpose",
+    "benchmark_split",
+    "created_at",
+    "run_manifest_sha256",
+    "results_sha256",
+    "benchmark_sha256",
+    "chunking_report_sha256",
+    "chunks_sha256",
+    "item_count",
+    "case_count",
+    "secondary_review_fraction",
+    "secondary_case_count",
+    "secondary_item_count",
+    "primary_packet_sha256",
+    "secondary_packet_sha256",
+    "primary_label_template_sha256",
+    "secondary_label_template_sha256",
+    "blinding_key_sha256",
+    "dimensions",
+    "instructions",
+    "limitations"
+  ],
+  "title": "AdjudicationManifest",
+  "type": "object"
+}
