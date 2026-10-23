@@ -1,0 +1,118 @@
+{
+  "additionalProperties": false,
+  "description": "Checksum-backed proof that every blinded disagreement was resolved.",
+  "properties": {
+    "adjudicator_id": {
+      "anyOf": [
+        {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Adjudicator Id"
+    },
+    "agreement_protocol_id": {
+      "const": "deepshield-adjudication-agreement-v1",
+      "default": "deepshield-adjudication-agreement-v1",
+      "title": "Agreement Protocol Id",
+      "type": "string"
+    },
+    "agreement_report_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Agreement Report Sha256",
+      "type": "string"
+    },
+    "completed_consensus_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Completed Consensus Sha256",
+      "type": "string"
+    },
+    "disagreement_count": {
+      "minimum": 0,
+      "title": "Disagreement Count",
+      "type": "integer"
+    },
+    "disagreements_template_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Disagreements Template Sha256",
+      "type": "string"
+    },
+    "item_count": {
+      "minimum": 1,
+      "title": "Item Count",
+      "type": "integer"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "primary_labels_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Primary Labels Sha256",
+      "type": "string"
+    },
+    "protocol_id": {
+      "const": "deepshield-adjudication-consensus-v1",
+      "default": "deepshield-adjudication-consensus-v1",
+      "title": "Protocol Id",
+      "type": "string"
+    },
+    "resolved_disagreement_count": {
+      "minimum": 0,
+      "title": "Resolved Disagreement Count",
+      "type": "integer"
+    },
+    "resolved_labels_file": {
+      "const": "resolved-labels.jsonl",
+      "default": "resolved-labels.jsonl",
+      "title": "Resolved Labels File",
+      "type": "string"
+    },
+    "resolved_labels_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Resolved Labels Sha256",
+      "type": "string"
+    },
+    "run_id": {
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "secondary_labels_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Secondary Labels Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "agreement_report_sha256",
+    "disagreements_template_sha256",
+    "primary_labels_sha256",
+    "secondary_labels_sha256",
+    "completed_consensus_sha256",
+    "adjudicator_id",
+    "item_count",
+    "disagreement_count",
+    "resolved_disagreement_count",
+    "resolved_labels_sha256",
+    "limitations"
+  ],
+  "title": "AdjudicationConsensusReport",
+  "type": "object"
+}

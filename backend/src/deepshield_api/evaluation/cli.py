@@ -17,8 +17,12 @@ from deepshield_api.evaluation.agreement import (
     AgreementAnalysisError,
     analyze_adjudication_agreement,
     render_agreement_report_schema,
+    render_consensus_report_schema,
+    resolve_adjudication_consensus,
     write_agreement_analysis,
     write_agreement_report_schema,
+    write_consensus_analysis,
+    write_consensus_report_schema,
 )
 from deepshield_api.evaluation.audit import (
     audit_benchmark,
@@ -75,6 +79,7 @@ DEFAULT_RUNS_ROOT = Path("data/evaluation/runs")
 DEFAULT_SCORE_SCHEMA_PATH = Path("data/evaluation/score-report.schema.json")
 DEFAULT_ADJUDICATION_SCHEMA_PATH = Path("data/evaluation/adjudication-manifest.schema.json")
 DEFAULT_AGREEMENT_SCHEMA_PATH = Path("data/evaluation/adjudication-agreement.schema.json")
+DEFAULT_CONSENSUS_SCHEMA_PATH = Path("data/evaluation/adjudication-consensus.schema.json")
 
 
 def _resolve_from_root(path: Path, repository_root: Path) -> Path:
@@ -113,6 +118,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--output", type=Path, default=DEFAULT_AGREEMENT_SCHEMA_PATH
     )
     agreement_schema_parser.add_argument("--check", action="store_true")
+
+    consensus_schema_parser = subparsers.add_parser(
+        "adjudication-consensus-schema",
+        help="Export the blinded-adjudication consensus-report schema.",
+    )
+    consensus_schema_parser.add_argument(
+        "--output", type=Path, default=DEFAULT_CONSENSUS_SCHEMA_PATH
+    )
+    consensus_schema_parser.add_argument("--check", action="store_true")
 
     generate_parser = subparsers.add_parser(
         "generate", help="Generate the deterministic draft benchmark and safety fixtures."
@@ -204,6 +218,15 @@ def build_parser() -> argparse.ArgumentParser:
     agreement_parser.add_argument("package_directory", type=Path)
     agreement_parser.add_argument("primary_labels", type=Path)
     agreement_parser.add_argument("secondary_labels", type=Path)
+
+    consensus_parser = subparsers.add_parser(
+        "adjudication-consensus",
+        help="Validate blinded consensus decisions and freeze resolved semantic labels.",
+    )
+    consensus_parser.add_argument("package_directory", type=Path)
+    consensus_parser.add_argument("primary_labels", type=Path)
+    consensus_parser.add_argument("secondary_labels", type=Path)
+    consensus_parser.add_argument("completed_consensus", type=Path)
     return parser
 
 
@@ -261,6 +284,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         write_agreement_report_schema(output)
         print(f"Wrote agreement schema: {output}")
+        return 0
+
+    if args.command == "adjudication-consensus-schema":
+        output = Path(args.output)
+        expected = render_consensus_report_schema()
+        if args.check:
+            if not output.is_file() or output.read_text(encoding="utf-8") != expected:
+                print(f"Consensus schema is missing or out of date: {output}", file=sys.stderr)
+                return 1
+            print(f"Consensus schema is current: {output}")
+            return 0
+        write_consensus_report_schema(output)
+        print(f"Wrote consensus schema: {output}")
         return 0
 
     if args.command == "generate":
@@ -499,6 +535,24 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"Analyzed {completed_agreement.report.overlap_item_count} independently reviewed "
             f"items with {completed_agreement.report.disagreement_count} decision "
             f"disagreements: {output}"
+        )
+        return 0
+
+    if args.command == "adjudication-consensus":
+        try:
+            completed_consensus = resolve_adjudication_consensus(
+                package_directory=Path(args.package_directory),
+                primary_labels_path=Path(args.primary_labels),
+                secondary_labels_path=Path(args.secondary_labels),
+                completed_consensus_path=Path(args.completed_consensus),
+            )
+            output = write_consensus_analysis(Path(args.package_directory), completed_consensus)
+        except (AgreementAnalysisError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(
+            f"Resolved {completed_consensus.report.disagreement_count} blinded "
+            f"disagreements across {completed_consensus.report.item_count} items: {output}"
         )
         return 0
 

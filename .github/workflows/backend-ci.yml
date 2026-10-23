@@ -78,6 +78,7 @@ jobs:
           uv run --no-sync python -m deepshield_api.evaluation.cli score-schema --check --output ../data/evaluation/score-report.schema.json
           uv run --no-sync python -m deepshield_api.evaluation.cli adjudication-schema --check --output ../data/evaluation/adjudication-manifest.schema.json
           uv run --no-sync python -m deepshield_api.evaluation.cli adjudication-agreement-schema --check --output ../data/evaluation/adjudication-agreement.schema.json
+          uv run --no-sync python -m deepshield_api.evaluation.cli adjudication-consensus-schema --check --output ../data/evaluation/adjudication-consensus.schema.json
 
       - name: Confirm generated files are unchanged
         run: git diff --exit-code
