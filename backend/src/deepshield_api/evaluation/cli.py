@@ -13,6 +13,13 @@ from deepshield_api.evaluation.adjudication import (
     write_adjudication_manifest_schema,
     write_adjudication_package,
 )
+from deepshield_api.evaluation.agreement import (
+    AgreementAnalysisError,
+    analyze_adjudication_agreement,
+    render_agreement_report_schema,
+    write_agreement_analysis,
+    write_agreement_report_schema,
+)
 from deepshield_api.evaluation.audit import (
     audit_benchmark,
     render_audit_report,
@@ -67,6 +74,7 @@ DEFAULT_GENERATION_CONFIGURATION_PATH = Path("config/experiments/generation-mode
 DEFAULT_RUNS_ROOT = Path("data/evaluation/runs")
 DEFAULT_SCORE_SCHEMA_PATH = Path("data/evaluation/score-report.schema.json")
 DEFAULT_ADJUDICATION_SCHEMA_PATH = Path("data/evaluation/adjudication-manifest.schema.json")
+DEFAULT_AGREEMENT_SCHEMA_PATH = Path("data/evaluation/adjudication-agreement.schema.json")
 
 
 def _resolve_from_root(path: Path, repository_root: Path) -> Path:
@@ -96,6 +104,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--output", type=Path, default=DEFAULT_ADJUDICATION_SCHEMA_PATH
     )
     adjudication_schema_parser.add_argument("--check", action="store_true")
+
+    agreement_schema_parser = subparsers.add_parser(
+        "adjudication-agreement-schema",
+        help="Export the blinded-adjudication agreement-report schema.",
+    )
+    agreement_schema_parser.add_argument(
+        "--output", type=Path, default=DEFAULT_AGREEMENT_SCHEMA_PATH
+    )
+    agreement_schema_parser.add_argument("--check", action="store_true")
 
     generate_parser = subparsers.add_parser(
         "generate", help="Generate the deterministic draft benchmark and safety fixtures."
@@ -179,6 +196,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     labels_parser.add_argument("packet", type=Path)
     labels_parser.add_argument("labels", type=Path)
+
+    agreement_parser = subparsers.add_parser(
+        "adjudication-agreement",
+        help="Analyze independent blinded labels and prepare disagreement adjudication.",
+    )
+    agreement_parser.add_argument("package_directory", type=Path)
+    agreement_parser.add_argument("primary_labels", type=Path)
+    agreement_parser.add_argument("secondary_labels", type=Path)
     return parser
 
 
@@ -223,6 +248,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         write_adjudication_manifest_schema(output)
         print(f"Wrote adjudication schema: {output}")
+        return 0
+
+    if args.command == "adjudication-agreement-schema":
+        output = Path(args.output)
+        expected = render_agreement_report_schema()
+        if args.check:
+            if not output.is_file() or output.read_text(encoding="utf-8") != expected:
+                print(f"Agreement schema is missing or out of date: {output}", file=sys.stderr)
+                return 1
+            print(f"Agreement schema is current: {output}")
+            return 0
+        write_agreement_report_schema(output)
+        print(f"Wrote agreement schema: {output}")
         return 0
 
     if args.command == "generate":
@@ -443,6 +481,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Validated {len(completed_labels.labels)} labels from reviewer "
             f"{completed_labels.reviewer_id}."
+        )
+        return 0
+
+    if args.command == "adjudication-agreement":
+        try:
+            completed_agreement = analyze_adjudication_agreement(
+                package_directory=Path(args.package_directory),
+                primary_labels_path=Path(args.primary_labels),
+                secondary_labels_path=Path(args.secondary_labels),
+            )
+            output = write_agreement_analysis(Path(args.package_directory), completed_agreement)
+        except (AgreementAnalysisError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(
+            f"Analyzed {completed_agreement.report.overlap_item_count} independently reviewed "
+            f"items with {completed_agreement.report.disagreement_count} decision "
+            f"disagreements: {output}"
         )
         return 0
 

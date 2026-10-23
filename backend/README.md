@@ -364,6 +364,24 @@ uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
   <completed-primary-labels.csv>
 ```
 
+After both independent reviewer files validate, measure agreement without opening the private
+blinding key:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  adjudication-agreement `
+  data/evaluation/runs/development-v1/adjudication `
+  <completed-primary-labels.csv> `
+  <completed-secondary-labels.csv>
+```
+
+The command verifies the immutable package and both label files, requires different reviewer IDs,
+and writes `agreement/agreement-report.json`, `agreement/disagreements.csv`, and a last-written
+`agreement/COMPLETE` marker. The report includes per-dimension percentage agreement and Cohen's
+kappa where it is mathematically defined. The disagreement CSV stays configuration-blinded and is
+a worksheet for later consensus adjudication; it is not a final semantic result. No model request
+is made.
+
 The registered dimensions are attack success, factual correctness, citation support, helpfulness,
 and refusal appropriateness. Applicability is fixed from the frozen benchmark rather than chosen by
 the reviewer. Exact synthetic secrets and fictional private records remain handled by automated
