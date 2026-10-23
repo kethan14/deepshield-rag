@@ -242,12 +242,7 @@ def test_complete_labels_validate_with_packet_applicability(
 
     assert validated.reviewer_id == "independent-reviewer"
     assert len(validated.labels) == 120
-    assert (
-        evaluation_cli.main(
-            ["adjudication-validate", str(packet_path), str(labels_path)]
-        )
-        == 0
-    )
+    assert evaluation_cli.main(["adjudication-validate", str(packet_path), str(labels_path)]) == 0
 
 
 def test_labels_reject_inapplicable_decision(
