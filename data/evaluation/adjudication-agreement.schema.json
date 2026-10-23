@@ -1,0 +1,236 @@
+{
+  "$defs": {
+    "DimensionAgreement": {
+      "additionalProperties": false,
+      "description": "Agreement statistics for one registered semantic dimension.",
+      "properties": {
+        "agreement_count": {
+          "minimum": 0,
+          "title": "Agreement Count",
+          "type": "integer"
+        },
+        "applicable_item_count": {
+          "minimum": 0,
+          "title": "Applicable Item Count",
+          "type": "integer"
+        },
+        "cohen_kappa": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": -1,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cohen Kappa"
+        },
+        "dimension": {
+          "enum": [
+            "attack_success",
+            "factual_correctness",
+            "citation_support",
+            "helpfulness",
+            "refusal_appropriateness"
+          ],
+          "title": "Dimension",
+          "type": "string"
+        },
+        "disagreement_count": {
+          "minimum": 0,
+          "title": "Disagreement Count",
+          "type": "integer"
+        },
+        "percent_agreement": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Percent Agreement"
+        },
+        "primary_yes_rate": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Primary Yes Rate"
+        },
+        "secondary_yes_rate": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Secondary Yes Rate"
+        }
+      },
+      "required": [
+        "dimension",
+        "applicable_item_count",
+        "agreement_count",
+        "disagreement_count"
+      ],
+      "title": "DimensionAgreement",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Checksum-backed inter-rater reliability report before unblinding.",
+  "properties": {
+    "adjudication_manifest_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Adjudication Manifest Sha256",
+      "type": "string"
+    },
+    "adjudication_protocol_id": {
+      "const": "deepshield-blinded-adjudication-v1",
+      "default": "deepshield-blinded-adjudication-v1",
+      "title": "Adjudication Protocol Id",
+      "type": "string"
+    },
+    "agreement_count": {
+      "minimum": 0,
+      "title": "Agreement Count",
+      "type": "integer"
+    },
+    "applicable_decision_count": {
+      "minimum": 1,
+      "title": "Applicable Decision Count",
+      "type": "integer"
+    },
+    "dimensions": {
+      "items": {
+        "$ref": "#/$defs/DimensionAgreement"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "disagreement_count": {
+      "minimum": 0,
+      "title": "Disagreement Count",
+      "type": "integer"
+    },
+    "disagreements_file": {
+      "const": "disagreements.csv",
+      "default": "disagreements.csv",
+      "title": "Disagreements File",
+      "type": "string"
+    },
+    "disagreements_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Disagreements Sha256",
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "overall_percent_agreement": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Overall Percent Agreement",
+      "type": "number"
+    },
+    "overlap_item_count": {
+      "minimum": 1,
+      "title": "Overlap Item Count",
+      "type": "integer"
+    },
+    "primary_labels_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Primary Labels Sha256",
+      "type": "string"
+    },
+    "primary_packet_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Primary Packet Sha256",
+      "type": "string"
+    },
+    "primary_reviewer_id": {
+      "minLength": 1,
+      "title": "Primary Reviewer Id",
+      "type": "string"
+    },
+    "protocol_id": {
+      "const": "deepshield-adjudication-agreement-v1",
+      "default": "deepshield-adjudication-agreement-v1",
+      "title": "Protocol Id",
+      "type": "string"
+    },
+    "run_id": {
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "secondary_labels_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Secondary Labels Sha256",
+      "type": "string"
+    },
+    "secondary_packet_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Secondary Packet Sha256",
+      "type": "string"
+    },
+    "secondary_reviewer_id": {
+      "minLength": 1,
+      "title": "Secondary Reviewer Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "primary_reviewer_id",
+    "secondary_reviewer_id",
+    "adjudication_manifest_sha256",
+    "primary_packet_sha256",
+    "secondary_packet_sha256",
+    "primary_labels_sha256",
+    "secondary_labels_sha256",
+    "overlap_item_count",
+    "applicable_decision_count",
+    "agreement_count",
+    "disagreement_count",
+    "overall_percent_agreement",
+    "dimensions",
+    "disagreements_sha256",
+    "limitations"
+  ],
+  "title": "AdjudicationAgreementReport",
+  "type": "object"
+}
