@@ -56,6 +56,13 @@ from deepshield_api.evaluation.scoring import (
     write_completed_score,
     write_score_report_schema,
 )
+from deepshield_api.evaluation.semantic import (
+    SemanticAnalysisError,
+    render_semantic_report_schema,
+    unblind_semantic_results,
+    write_semantic_analysis,
+    write_semantic_report_schema,
+)
 from deepshield_api.evaluation.synthetic import (
     SyntheticEnvironmentError,
     build_synthetic_environment,
@@ -80,6 +87,7 @@ DEFAULT_SCORE_SCHEMA_PATH = Path("data/evaluation/score-report.schema.json")
 DEFAULT_ADJUDICATION_SCHEMA_PATH = Path("data/evaluation/adjudication-manifest.schema.json")
 DEFAULT_AGREEMENT_SCHEMA_PATH = Path("data/evaluation/adjudication-agreement.schema.json")
 DEFAULT_CONSENSUS_SCHEMA_PATH = Path("data/evaluation/adjudication-consensus.schema.json")
+DEFAULT_SEMANTIC_SCHEMA_PATH = Path("data/evaluation/semantic-analysis.schema.json")
 
 
 def _resolve_from_root(path: Path, repository_root: Path) -> Path:
@@ -127,6 +135,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--output", type=Path, default=DEFAULT_CONSENSUS_SCHEMA_PATH
     )
     consensus_schema_parser.add_argument("--check", action="store_true")
+
+    semantic_schema_parser = subparsers.add_parser(
+        "adjudication-semantic-schema",
+        help="Export the unblinded semantic-analysis report schema.",
+    )
+    semantic_schema_parser.add_argument("--output", type=Path, default=DEFAULT_SEMANTIC_SCHEMA_PATH)
+    semantic_schema_parser.add_argument("--check", action="store_true")
 
     generate_parser = subparsers.add_parser(
         "generate", help="Generate the deterministic draft benchmark and safety fixtures."
@@ -227,6 +242,12 @@ def build_parser() -> argparse.ArgumentParser:
     consensus_parser.add_argument("primary_labels", type=Path)
     consensus_parser.add_argument("secondary_labels", type=Path)
     consensus_parser.add_argument("completed_consensus", type=Path)
+
+    unblind_parser = subparsers.add_parser(
+        "adjudication-unblind",
+        help="Unblind locked consensus labels and summarize semantic outcomes.",
+    )
+    unblind_parser.add_argument("package_directory", type=Path)
     return parser
 
 
@@ -297,6 +318,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         write_consensus_report_schema(output)
         print(f"Wrote consensus schema: {output}")
+        return 0
+
+    if args.command == "adjudication-semantic-schema":
+        output = Path(args.output)
+        expected = render_semantic_report_schema()
+        if args.check:
+            if not output.is_file() or output.read_text(encoding="utf-8") != expected:
+                print(
+                    f"Semantic-analysis schema is missing or out of date: {output}", file=sys.stderr
+                )
+                return 1
+            print(f"Semantic-analysis schema is current: {output}")
+            return 0
+        write_semantic_report_schema(output)
+        print(f"Wrote semantic-analysis schema: {output}")
         return 0
 
     if args.command == "generate":
@@ -553,6 +589,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Resolved {completed_consensus.report.disagreement_count} blinded "
             f"disagreements across {completed_consensus.report.item_count} items: {output}"
+        )
+        return 0
+
+    if args.command == "adjudication-unblind":
+        try:
+            completed_semantic = unblind_semantic_results(Path(args.package_directory))
+            output = write_semantic_analysis(Path(args.package_directory), completed_semantic)
+        except (SemanticAnalysisError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(
+            f"Unblinded {completed_semantic.report.item_count} resolved labels across "
+            f"{len(completed_semantic.report.configurations)} configurations: {output}"
         )
         return 0
 

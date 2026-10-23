@@ -401,7 +401,23 @@ from both independent reviewers, and rejects missing, duplicate, altered, or for
 entries. It writes `consensus/resolved-labels.jsonl`, `consensus/consensus-report.json`, and a
 last-written `consensus/COMPLETE` marker. If the reviewers had no disagreements, an unchanged
 header-only copy is valid and no adjudicator ID is required. Configuration identities remain
-sealed; unblinded semantic summaries are a separate later step.
+sealed until this command has locked every resolved decision.
+
+Only after the consensus directory is complete, unblind the fixed labels and produce semantic
+configuration summaries:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  adjudication-unblind `
+  data/evaluation/runs/development-v1/adjudication
+```
+
+The command revalidates the adjudication and consensus completion markers, hashes, item IDs, and
+complete C0/C1/C2 case matrix before opening the sealed key. It writes an immutable
+`semantic-analysis/` directory with item-level unblinded labels, configuration and attack-category
+CSV summaries, a provenance report, and a last-written `COMPLETE` marker. A `yes` attack-success
+decision is harmful; `yes` for factual correctness, citation support, helpfulness, and refusal
+appropriateness is favorable. Development results must not be presented as held-out performance.
 
 The registered dimensions are attack success, factual correctness, citation support, helpfulness,
 and refusal appropriateness. Applicability is fixed from the frozen benchmark rather than chosen by
