@@ -279,3 +279,22 @@ Primary-only items retain the primary reviewer's decision; independently reviewe
 the shared decision; disagreements use the registered consensus decision. A header-only consensus
 copy is valid when the agreement report contains no disagreements. The output remains blinded and
 must not yet be reported as a C0/C1/C2 result.
+
+After consensus is complete and immutable, open the sealed configuration key and create the first
+configuration-level semantic evidence:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  adjudication-semantic-schema --check
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  adjudication-unblind data/evaluation/runs/development-v1/adjudication
+```
+
+The unblinding command verifies the package and consensus completion markers, every relevant
+checksum, identical item sets, unique mappings, and one C0/C1/C2 result per case. It creates
+`semantic-analysis/unblinded-labels.jsonl`, `configuration-summary.csv`,
+`attack-category-summary.csv`, `semantic-report.json`, and `COMPLETE`. It reports the observed
+human-label rates without inventing missing judgments. Attack-success `yes` rates are harmful;
+the other registered `yes` rates are favorable. Statistical uncertainty and paired significance
+remain the responsibility of the later integrated analysis, and development outputs remain
+separate from final held-out claims.

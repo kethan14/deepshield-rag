@@ -1,0 +1,301 @@
+{
+  "$defs": {
+    "AttackCategory": {
+      "description": "Threat classes covered by the controlled adversarial benchmark.",
+      "enum": [
+        "direct-prompt-injection",
+        "indirect-prompt-injection",
+        "system-prompt-extraction",
+        "synthetic-secret-exfiltration",
+        "fictional-pii-exfiltration",
+        "unauthorized-tool-action"
+      ],
+      "title": "AttackCategory",
+      "type": "string"
+    },
+    "BenchmarkSplit": {
+      "description": "Partitions used for guardrail development and final held-out reporting.",
+      "enum": [
+        "development",
+        "test"
+      ],
+      "title": "BenchmarkSplit",
+      "type": "string"
+    },
+    "ExperimentConfiguration": {
+      "description": "Comparable system configurations in the preregistered execution order.",
+      "enum": [
+        "C0",
+        "C1",
+        "C2"
+      ],
+      "title": "ExperimentConfiguration",
+      "type": "string"
+    },
+    "ExperimentPurpose": {
+      "description": "Run purpose that prevents development work from touching the held-out test split.",
+      "enum": [
+        "development",
+        "final"
+      ],
+      "title": "ExperimentPurpose",
+      "type": "string"
+    },
+    "SemanticAttackCategorySummary": {
+      "additionalProperties": false,
+      "description": "Human-reviewed attack-success rate for one threat and configuration.",
+      "properties": {
+        "attack_category": {
+          "$ref": "#/$defs/AttackCategory"
+        },
+        "attack_success_count": {
+          "minimum": 0,
+          "title": "Attack Success Count",
+          "type": "integer"
+        },
+        "attack_success_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Attack Success Rate",
+          "type": "number"
+        },
+        "configuration": {
+          "$ref": "#/$defs/ExperimentConfiguration"
+        },
+        "item_count": {
+          "minimum": 1,
+          "title": "Item Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "configuration",
+        "attack_category",
+        "item_count",
+        "attack_success_count",
+        "attack_success_rate"
+      ],
+      "title": "SemanticAttackCategorySummary",
+      "type": "object"
+    },
+    "SemanticConfigurationSummary": {
+      "additionalProperties": false,
+      "description": "Human-reviewed outcome rates for one experimental configuration.",
+      "properties": {
+        "configuration": {
+          "$ref": "#/$defs/ExperimentConfiguration"
+        },
+        "dimensions": {
+          "items": {
+            "$ref": "#/$defs/SemanticDimensionSummary"
+          },
+          "maxItems": 5,
+          "minItems": 5,
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "item_count": {
+          "minimum": 1,
+          "title": "Item Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "configuration",
+        "item_count",
+        "dimensions"
+      ],
+      "title": "SemanticConfigurationSummary",
+      "type": "object"
+    },
+    "SemanticDimensionSummary": {
+      "additionalProperties": false,
+      "description": "Observed yes/no rate for one human-reviewed dimension.",
+      "properties": {
+        "applicable_item_count": {
+          "minimum": 0,
+          "title": "Applicable Item Count",
+          "type": "integer"
+        },
+        "dimension": {
+          "enum": [
+            "attack_success",
+            "factual_correctness",
+            "citation_support",
+            "helpfulness",
+            "refusal_appropriateness"
+          ],
+          "title": "Dimension",
+          "type": "string"
+        },
+        "no_count": {
+          "minimum": 0,
+          "title": "No Count",
+          "type": "integer"
+        },
+        "yes_count": {
+          "minimum": 0,
+          "title": "Yes Count",
+          "type": "integer"
+        },
+        "yes_rate": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Yes Rate"
+        }
+      },
+      "required": [
+        "dimension",
+        "applicable_item_count",
+        "yes_count",
+        "no_count"
+      ],
+      "title": "SemanticDimensionSummary",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Immutable provenance and configuration-level semantic results.",
+  "properties": {
+    "adjudication_manifest_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Adjudication Manifest Sha256",
+      "type": "string"
+    },
+    "attack_categories": {
+      "items": {
+        "$ref": "#/$defs/SemanticAttackCategorySummary"
+      },
+      "title": "Attack Categories",
+      "type": "array"
+    },
+    "attack_category_summary_file": {
+      "const": "attack-category-summary.csv",
+      "default": "attack-category-summary.csv",
+      "title": "Attack Category Summary File",
+      "type": "string"
+    },
+    "attack_category_summary_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Attack Category Summary Sha256",
+      "type": "string"
+    },
+    "benchmark_split": {
+      "$ref": "#/$defs/BenchmarkSplit"
+    },
+    "blinding_key_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Blinding Key Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "minimum": 1,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "configuration_summary_file": {
+      "const": "configuration-summary.csv",
+      "default": "configuration-summary.csv",
+      "title": "Configuration Summary File",
+      "type": "string"
+    },
+    "configuration_summary_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Configuration Summary Sha256",
+      "type": "string"
+    },
+    "configurations": {
+      "items": {
+        "$ref": "#/$defs/SemanticConfigurationSummary"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Configurations",
+      "type": "array"
+    },
+    "consensus_report_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Consensus Report Sha256",
+      "type": "string"
+    },
+    "item_count": {
+      "minimum": 1,
+      "title": "Item Count",
+      "type": "integer"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 3,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "protocol_id": {
+      "const": "deepshield-semantic-analysis-v1",
+      "default": "deepshield-semantic-analysis-v1",
+      "title": "Protocol Id",
+      "type": "string"
+    },
+    "purpose": {
+      "$ref": "#/$defs/ExperimentPurpose"
+    },
+    "resolved_labels_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Resolved Labels Sha256",
+      "type": "string"
+    },
+    "run_id": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "unblinded_labels_file": {
+      "const": "unblinded-labels.jsonl",
+      "default": "unblinded-labels.jsonl",
+      "title": "Unblinded Labels File",
+      "type": "string"
+    },
+    "unblinded_labels_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Unblinded Labels Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "purpose",
+    "benchmark_split",
+    "adjudication_manifest_sha256",
+    "blinding_key_sha256",
+    "consensus_report_sha256",
+    "resolved_labels_sha256",
+    "item_count",
+    "case_count",
+    "unblinded_labels_sha256",
+    "configuration_summary_sha256",
+    "attack_category_summary_sha256",
+    "configurations",
+    "attack_categories",
+    "limitations"
+  ],
+  "title": "SemanticAnalysisReport",
+  "type": "object"
+}
