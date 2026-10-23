@@ -16,7 +16,10 @@ from deepshield_api.evaluation.agreement import (
     AgreementAnalysisError,
     analyze_adjudication_agreement,
     render_agreement_report_schema,
+    render_consensus_report_schema,
+    resolve_adjudication_consensus,
     write_agreement_analysis,
+    write_consensus_analysis,
 )
 from deepshield_api.evaluation.models import (
     AttackCategory,
@@ -28,6 +31,7 @@ from deepshield_api.evaluation.runs import ExperimentPurpose
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = REPOSITORY_ROOT / "data/evaluation/adjudication-agreement.schema.json"
+CONSENSUS_SCHEMA_PATH = REPOSITORY_ROOT / "data/evaluation/adjudication-consensus.schema.json"
 LABEL_FIELDS = [
     "blinded_item_id",
     "reviewer_id",
@@ -133,6 +137,138 @@ def test_agreement_rejects_same_reviewer_and_package_drift(tmp_path: Path) -> No
         )
 
 
+def test_consensus_resolves_every_disagreement_without_unblinding(tmp_path: Path) -> None:
+    package, primary_labels, secondary_labels = _write_disagreeing_review(package_root=tmp_path)
+    agreement = analyze_adjudication_agreement(
+        package_directory=package,
+        primary_labels_path=primary_labels,
+        secondary_labels_path=secondary_labels,
+    )
+    write_agreement_analysis(package, agreement)
+    consensus_path = tmp_path / "completed-consensus.csv"
+    _complete_consensus(
+        package / "agreement/disagreements.csv",
+        consensus_path,
+        adjudicator_id="consensus-panel",
+    )
+
+    completed = resolve_adjudication_consensus(
+        package_directory=package,
+        primary_labels_path=primary_labels,
+        secondary_labels_path=secondary_labels,
+        completed_consensus_path=consensus_path,
+    )
+    repeated = resolve_adjudication_consensus(
+        package_directory=package,
+        primary_labels_path=primary_labels,
+        secondary_labels_path=secondary_labels,
+        completed_consensus_path=consensus_path,
+    )
+
+    assert completed == repeated
+    assert completed.report.disagreement_count == 2
+    assert completed.report.resolved_disagreement_count == 2
+    assert completed.report.adjudicator_id == "consensus-panel"
+    assert "configuration" not in completed.resolved_labels_jsonl
+    rows = [json.loads(line) for line in completed.resolved_labels_jsonl.splitlines()]
+    assert rows[1]["attack_success"] == "yes"
+    assert rows[1]["consensus_dimensions"] == ["attack_success"]
+    assert rows[2]["refusal_appropriateness"] == "no"
+    assert rows[2]["consensus_dimensions"] == ["refusal_appropriateness"]
+    output = write_consensus_analysis(package, completed)
+    assert (output / "COMPLETE").is_file()
+    with pytest.raises(AgreementAnalysisError, match="refusing to replace"):
+        write_consensus_analysis(package, completed)
+
+
+def test_consensus_rejects_changed_evidence_and_nonindependent_adjudicator(
+    tmp_path: Path,
+) -> None:
+    package, primary_labels, secondary_labels = _write_disagreeing_review(package_root=tmp_path)
+    agreement = analyze_adjudication_agreement(
+        package_directory=package,
+        primary_labels_path=primary_labels,
+        secondary_labels_path=secondary_labels,
+    )
+    write_agreement_analysis(package, agreement)
+    consensus_path = tmp_path / "completed-consensus.csv"
+    _complete_consensus(
+        package / "agreement/disagreements.csv",
+        consensus_path,
+        adjudicator_id="primary-reviewer",
+    )
+
+    with pytest.raises(AgreementAnalysisError, match="must differ"):
+        resolve_adjudication_consensus(
+            package_directory=package,
+            primary_labels_path=primary_labels,
+            secondary_labels_path=secondary_labels,
+            completed_consensus_path=consensus_path,
+        )
+
+    rows = list(csv.DictReader(io.StringIO(consensus_path.read_text(encoding="utf-8"))))
+    rows[0]["primary_decision"] = "yes" if rows[0]["primary_decision"] == "no" else "no"
+    consensus_path.write_text(_render_csv(rows), encoding="utf-8", newline="\n")
+    with pytest.raises(AgreementAnalysisError, match="reviewer decisions changed"):
+        resolve_adjudication_consensus(
+            package_directory=package,
+            primary_labels_path=primary_labels,
+            secondary_labels_path=secondary_labels,
+            completed_consensus_path=consensus_path,
+        )
+
+    _complete_consensus(
+        package / "agreement/disagreements.csv",
+        consensus_path,
+        adjudicator_id="consensus-panel",
+    )
+    rows = list(csv.DictReader(io.StringIO(consensus_path.read_text(encoding="utf-8"))))
+    rows[0]["rationale"] = '=HYPERLINK("https://invalid.example")'
+    consensus_path.write_text(_render_csv(rows), encoding="utf-8", newline="\n")
+    with pytest.raises(AgreementAnalysisError, match="formula marker"):
+        resolve_adjudication_consensus(
+            package_directory=package,
+            primary_labels_path=primary_labels,
+            secondary_labels_path=secondary_labels,
+            completed_consensus_path=consensus_path,
+        )
+
+
+def test_consensus_supports_zero_disagreements_and_cli(tmp_path: Path) -> None:
+    package = _write_package(tmp_path)
+    primary_labels = tmp_path / "primary-labels.csv"
+    secondary_labels = tmp_path / "secondary-labels.csv"
+    primary_labels.write_text(
+        _labels("primary-reviewer", attack=("no", "no", "no"), refusal=("yes", "yes", "yes")),
+        encoding="utf-8",
+    )
+    secondary_labels.write_text(
+        _labels("secondary-reviewer", attack=("no", "no", "no"), refusal=("yes", "yes", "yes")),
+        encoding="utf-8",
+    )
+    agreement = analyze_adjudication_agreement(
+        package_directory=package,
+        primary_labels_path=primary_labels,
+        secondary_labels_path=secondary_labels,
+    )
+    write_agreement_analysis(package, agreement)
+    consensus_path = tmp_path / "completed-consensus.csv"
+    consensus_path.write_bytes((package / "agreement/disagreements.csv").read_bytes())
+
+    arguments = [
+        "adjudication-consensus",
+        str(package),
+        str(primary_labels),
+        str(secondary_labels),
+        str(consensus_path),
+    ]
+    assert evaluation_cli.main(arguments) == 0
+    report = json.loads((package / "consensus/consensus-report.json").read_text(encoding="utf-8"))
+    assert report["disagreement_count"] == 0
+    assert report["adjudicator_id"] is None
+    assert evaluation_cli.main(arguments) == 1
+
+
 def test_agreement_schema_is_current(capsys: pytest.CaptureFixture[str]) -> None:
     assert SCHEMA_PATH.read_text(encoding="utf-8") == render_agreement_report_schema()
     assert (
@@ -142,6 +278,17 @@ def test_agreement_schema_is_current(capsys: pytest.CaptureFixture[str]) -> None
         == 0
     )
     assert "Agreement schema is current" in capsys.readouterr().out
+
+
+def test_consensus_schema_is_current(capsys: pytest.CaptureFixture[str]) -> None:
+    assert CONSENSUS_SCHEMA_PATH.read_text(encoding="utf-8") == render_consensus_report_schema()
+    assert (
+        evaluation_cli.main(
+            ["adjudication-consensus-schema", "--check", "--output", str(CONSENSUS_SCHEMA_PATH)]
+        )
+        == 0
+    )
+    assert "Consensus schema is current" in capsys.readouterr().out
 
 
 def _write_package(root: Path) -> Path:
@@ -240,6 +387,50 @@ def _labels(
                 "notes": "",
             }
         )
+    return output.getvalue()
+
+
+def _write_disagreeing_review(package_root: Path) -> tuple[Path, Path, Path]:
+    package = _write_package(package_root)
+    primary_labels = package_root / "primary-labels.csv"
+    secondary_labels = package_root / "secondary-labels.csv"
+    primary_labels.write_text(
+        _labels("primary-reviewer", attack=("no", "no", "no"), refusal=("yes", "yes", "yes")),
+        encoding="utf-8",
+    )
+    secondary_labels.write_text(
+        _labels("secondary-reviewer", attack=("no", "yes", "no"), refusal=("yes", "yes", "no")),
+        encoding="utf-8",
+    )
+    return package, primary_labels, secondary_labels
+
+
+def _complete_consensus(source: Path, output: Path, *, adjudicator_id: str) -> None:
+    rows = list(csv.DictReader(io.StringIO(source.read_text(encoding="utf-8"))))
+    for row in rows:
+        row["consensus_decision"] = row["secondary_decision"]
+        row["adjudicator_id"] = adjudicator_id
+        row["rationale"] = "Resolved from the registered rubric and displayed evidence."
+    output.write_text(_render_csv(rows), encoding="utf-8", newline="\n")
+
+
+def _render_csv(rows: list[dict[str, str]]) -> str:
+    output = io.StringIO(newline="")
+    writer = csv.DictWriter(
+        output,
+        fieldnames=[
+            "blinded_item_id",
+            "dimension",
+            "primary_decision",
+            "secondary_decision",
+            "consensus_decision",
+            "adjudicator_id",
+            "rationale",
+        ],
+        lineterminator="\n",
+    )
+    writer.writeheader()
+    writer.writerows(rows)
     return output.getvalue()
 
 

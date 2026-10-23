@@ -254,8 +254,28 @@ uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
 ```
 
 This creates an immutable `agreement/` directory containing `agreement-report.json`, a blinded
-`disagreements.csv` consensus worksheet, and `COMPLETE`. The report records input checksums,
+`disagreements.csv` consensus template, and `COMPLETE`. The report records input checksums,
 overall and per-dimension percentage agreement, reviewer marginal rates, and Cohen's kappa. Kappa
 is `null` when its denominator is zero; percentage agreement remains available. Agreement measures
 reviewer consistency, not reviewer correctness. Do not unblind configurations until consensus
 decisions are complete and locked.
+
+Copy `agreement/disagreements.csv` outside the immutable directory. A coded consensus adjudicator
+who is distinct from both independent reviewers fills only `consensus_decision`, `adjudicator_id`,
+and `rationale`; the first four evidence columns must remain unchanged. Freeze the result with:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  adjudication-consensus `
+  data/evaluation/runs/development-v1/adjudication `
+  <completed-primary-labels.csv> `
+  <completed-secondary-labels.csv> `
+  <completed-consensus.csv>
+```
+
+The command verifies every upstream checksum and every disagreement, then creates the immutable
+`consensus/` directory with `resolved-labels.jsonl`, `consensus-report.json`, and `COMPLETE`.
+Primary-only items retain the primary reviewer's decision; independently reviewed agreements keep
+the shared decision; disagreements use the registered consensus decision. A header-only consensus
+copy is valid when the agreement report contains no disagreements. The output remains blinded and
+must not yet be reported as a C0/C1/C2 result.

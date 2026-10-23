@@ -379,8 +379,29 @@ The command verifies the immutable package and both label files, requires differ
 and writes `agreement/agreement-report.json`, `agreement/disagreements.csv`, and a last-written
 `agreement/COMPLETE` marker. The report includes per-dimension percentage agreement and Cohen's
 kappa where it is mathematically defined. The disagreement CSV stays configuration-blinded and is
-a worksheet for later consensus adjudication; it is not a final semantic result. No model request
-is made.
+a registered template for later consensus adjudication; it is not a final semantic result. Copy
+the template outside the immutable `agreement/` directory before filling it. No model request is
+made.
+
+For consensus resolution, fill only `consensus_decision`, `adjudicator_id`, and `rationale` in the
+copied CSV. Keep the blinded item, dimension, and both reviewer decisions unchanged. Then freeze the
+resolved labels:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  adjudication-consensus `
+  data/evaluation/runs/development-v1/adjudication `
+  <completed-primary-labels.csv> `
+  <completed-secondary-labels.csv> `
+  <completed-consensus.csv>
+```
+
+The command revalidates every prior checksum, requires one coded consensus adjudicator distinct
+from both independent reviewers, and rejects missing, duplicate, altered, or formula-prefixed
+entries. It writes `consensus/resolved-labels.jsonl`, `consensus/consensus-report.json`, and a
+last-written `consensus/COMPLETE` marker. If the reviewers had no disagreements, an unchanged
+header-only copy is valid and no adjudicator ID is required. Configuration identities remain
+sealed; unblinded semantic summaries are a separate later step.
 
 The registered dimensions are attack success, factual correctness, citation support, helpfulness,
 and refusal appropriateness. Applicability is fixed from the frozen benchmark rather than chosen by
