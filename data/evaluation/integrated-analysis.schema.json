@@ -1,0 +1,536 @@
+{
+  "$defs": {
+    "AttackCategory": {
+      "description": "Threat classes covered by the controlled adversarial benchmark.",
+      "enum": [
+        "direct-prompt-injection",
+        "indirect-prompt-injection",
+        "system-prompt-extraction",
+        "synthetic-secret-exfiltration",
+        "fictional-pii-exfiltration",
+        "unauthorized-tool-action"
+      ],
+      "title": "AttackCategory",
+      "type": "string"
+    },
+    "BenchmarkSplit": {
+      "description": "Partitions used for guardrail development and final held-out reporting.",
+      "enum": [
+        "development",
+        "test"
+      ],
+      "title": "BenchmarkSplit",
+      "type": "string"
+    },
+    "ExperimentConfiguration": {
+      "description": "Comparable system configurations in the preregistered execution order.",
+      "enum": [
+        "C0",
+        "C1",
+        "C2"
+      ],
+      "title": "ExperimentConfiguration",
+      "type": "string"
+    },
+    "ExperimentPurpose": {
+      "description": "Run purpose that prevents development work from touching the held-out test split.",
+      "enum": [
+        "development",
+        "final"
+      ],
+      "title": "ExperimentPurpose",
+      "type": "string"
+    },
+    "IntegratedConfigurationSummary": {
+      "additionalProperties": false,
+      "description": "Primary automated and human metrics for one configuration.",
+      "properties": {
+        "attack_success": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "case_count": {
+          "minimum": 1,
+          "title": "Case Count",
+          "type": "integer"
+        },
+        "citation_support": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "coarse_action_alignment": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "configuration": {
+          "$ref": "#/$defs/ExperimentConfiguration"
+        },
+        "exact_sensitive_data_leakage": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "factual_correctness": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "helpfulness": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "refusal_appropriateness": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "retrieval_recall_at_5": {
+          "$ref": "#/$defs/MetricEstimate"
+        }
+      },
+      "required": [
+        "configuration",
+        "case_count",
+        "coarse_action_alignment",
+        "exact_sensitive_data_leakage",
+        "retrieval_recall_at_5",
+        "attack_success",
+        "factual_correctness",
+        "citation_support",
+        "helpfulness",
+        "refusal_appropriateness"
+      ],
+      "title": "IntegratedConfigurationSummary",
+      "type": "object"
+    },
+    "MetricEstimate": {
+      "additionalProperties": false,
+      "description": "Cluster-bootstrap estimate for a case-level bounded metric.",
+      "properties": {
+        "bootstrap_iterations": {
+          "default": 2000,
+          "minimum": 1,
+          "title": "Bootstrap Iterations",
+          "type": "integer"
+        },
+        "cluster_count": {
+          "minimum": 1,
+          "title": "Cluster Count",
+          "type": "integer"
+        },
+        "confidence_level": {
+          "default": 0.95,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Confidence Level",
+          "type": "number"
+        },
+        "confidence_lower": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence Lower",
+          "type": "number"
+        },
+        "confidence_upper": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence Upper",
+          "type": "number"
+        },
+        "method": {
+          "const": "template-family-cluster-bootstrap-percentile",
+          "default": "template-family-cluster-bootstrap-percentile",
+          "title": "Method",
+          "type": "string"
+        },
+        "sample_count": {
+          "minimum": 1,
+          "title": "Sample Count",
+          "type": "integer"
+        },
+        "value": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "value",
+        "confidence_lower",
+        "confidence_upper",
+        "sample_count",
+        "cluster_count"
+      ],
+      "title": "MetricEstimate",
+      "type": "object"
+    },
+    "SecurityUtilityPoint": {
+      "additionalProperties": false,
+      "description": "Figure-ready point showing the primary safety-utility trade-off.",
+      "properties": {
+        "attack_success_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Attack Success Rate",
+          "type": "number"
+        },
+        "configuration": {
+          "$ref": "#/$defs/ExperimentConfiguration"
+        },
+        "exact_sensitive_data_leakage_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Exact Sensitive Data Leakage Rate",
+          "type": "number"
+        },
+        "factual_correctness_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Factual Correctness Rate",
+          "type": "number"
+        },
+        "helpfulness_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Helpfulness Rate",
+          "type": "number"
+        }
+      },
+      "required": [
+        "configuration",
+        "attack_success_rate",
+        "factual_correctness_rate",
+        "helpfulness_rate",
+        "exact_sensitive_data_leakage_rate"
+      ],
+      "title": "SecurityUtilityPoint",
+      "type": "object"
+    },
+    "SemanticPairedComparison": {
+      "additionalProperties": false,
+      "description": "Paired human-label comparison with clustered uncertainty.",
+      "properties": {
+        "bootstrap_iterations": {
+          "default": 2000,
+          "minimum": 1,
+          "title": "Bootstrap Iterations",
+          "type": "integer"
+        },
+        "candidate_configuration": {
+          "$ref": "#/$defs/ExperimentConfiguration"
+        },
+        "candidate_only_yes": {
+          "minimum": 0,
+          "title": "Candidate Only Yes",
+          "type": "integer"
+        },
+        "candidate_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Candidate Rate",
+          "type": "number"
+        },
+        "cluster_count": {
+          "minimum": 1,
+          "title": "Cluster Count",
+          "type": "integer"
+        },
+        "confidence_level": {
+          "default": 0.95,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Confidence Level",
+          "type": "number"
+        },
+        "confidence_lower": {
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Confidence Lower",
+          "type": "number"
+        },
+        "confidence_upper": {
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Confidence Upper",
+          "type": "number"
+        },
+        "difference": {
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Difference",
+          "type": "number"
+        },
+        "dimension": {
+          "enum": [
+            "attack_success",
+            "factual_correctness",
+            "citation_support",
+            "helpfulness",
+            "refusal_appropriateness"
+          ],
+          "title": "Dimension",
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "higher-is-better",
+            "lower-is-better"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "holm_adjusted_p_value": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Holm Adjusted P Value",
+          "type": "number"
+        },
+        "mcnemar_exact_p_value": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mcnemar Exact P Value",
+          "type": "number"
+        },
+        "reference_configuration": {
+          "$ref": "#/$defs/ExperimentConfiguration"
+        },
+        "reference_only_yes": {
+          "minimum": 0,
+          "title": "Reference Only Yes",
+          "type": "integer"
+        },
+        "reference_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Reference Rate",
+          "type": "number"
+        },
+        "sample_count": {
+          "minimum": 1,
+          "title": "Sample Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dimension",
+        "direction",
+        "reference_configuration",
+        "candidate_configuration",
+        "reference_rate",
+        "candidate_rate",
+        "difference",
+        "confidence_lower",
+        "confidence_upper",
+        "sample_count",
+        "cluster_count",
+        "reference_only_yes",
+        "candidate_only_yes",
+        "mcnemar_exact_p_value",
+        "holm_adjusted_p_value"
+      ],
+      "title": "SemanticPairedComparison",
+      "type": "object"
+    },
+    "ThreatHeatmapCell": {
+      "additionalProperties": false,
+      "description": "Figure-ready human attack-success cell for one threat.",
+      "properties": {
+        "attack_category": {
+          "$ref": "#/$defs/AttackCategory"
+        },
+        "attack_success_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Attack Success Rate",
+          "type": "number"
+        },
+        "configuration": {
+          "$ref": "#/$defs/ExperimentConfiguration"
+        },
+        "item_count": {
+          "minimum": 1,
+          "title": "Item Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "configuration",
+        "attack_category",
+        "item_count",
+        "attack_success_rate"
+      ],
+      "title": "ThreatHeatmapCell",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Checksum-backed integrated evidence contract for tables and figures.",
+  "properties": {
+    "automated_trial_scores_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Automated Trial Scores Sha256",
+      "type": "string"
+    },
+    "benchmark_split": {
+      "$ref": "#/$defs/BenchmarkSplit"
+    },
+    "case_count": {
+      "minimum": 1,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "configuration_summary_file": {
+      "const": "configuration-summary.csv",
+      "default": "configuration-summary.csv",
+      "title": "Configuration Summary File",
+      "type": "string"
+    },
+    "configuration_summary_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Configuration Summary Sha256",
+      "type": "string"
+    },
+    "configurations": {
+      "items": {
+        "$ref": "#/$defs/IntegratedConfigurationSummary"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Configurations",
+      "type": "array"
+    },
+    "integrated_trials_file": {
+      "const": "integrated-trials.jsonl",
+      "default": "integrated-trials.jsonl",
+      "title": "Integrated Trials File",
+      "type": "string"
+    },
+    "integrated_trials_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Integrated Trials Sha256",
+      "type": "string"
+    },
+    "item_count": {
+      "minimum": 1,
+      "title": "Item Count",
+      "type": "integer"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 4,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "paired_comparisons_file": {
+      "const": "semantic-paired-comparisons.csv",
+      "default": "semantic-paired-comparisons.csv",
+      "title": "Paired Comparisons File",
+      "type": "string"
+    },
+    "paired_comparisons_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Paired Comparisons Sha256",
+      "type": "string"
+    },
+    "protocol_id": {
+      "const": "deepshield-integrated-analysis-v1",
+      "default": "deepshield-integrated-analysis-v1",
+      "title": "Protocol Id",
+      "type": "string"
+    },
+    "purpose": {
+      "$ref": "#/$defs/ExperimentPurpose"
+    },
+    "run_id": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "score_report_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Score Report Sha256",
+      "type": "string"
+    },
+    "security_utility_figure_file": {
+      "const": "figure-security-utility.csv",
+      "default": "figure-security-utility.csv",
+      "title": "Security Utility Figure File",
+      "type": "string"
+    },
+    "security_utility_figure_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Security Utility Figure Sha256",
+      "type": "string"
+    },
+    "security_utility_points": {
+      "items": {
+        "$ref": "#/$defs/SecurityUtilityPoint"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Security Utility Points",
+      "type": "array"
+    },
+    "semantic_paired_comparisons": {
+      "items": {
+        "$ref": "#/$defs/SemanticPairedComparison"
+      },
+      "maxItems": 15,
+      "minItems": 15,
+      "title": "Semantic Paired Comparisons",
+      "type": "array"
+    },
+    "semantic_report_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Semantic Report Sha256",
+      "type": "string"
+    },
+    "threat_heatmap": {
+      "items": {
+        "$ref": "#/$defs/ThreatHeatmapCell"
+      },
+      "title": "Threat Heatmap",
+      "type": "array"
+    },
+    "threat_heatmap_figure_file": {
+      "const": "figure-threat-heatmap.csv",
+      "default": "figure-threat-heatmap.csv",
+      "title": "Threat Heatmap Figure File",
+      "type": "string"
+    },
+    "threat_heatmap_figure_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Threat Heatmap Figure Sha256",
+      "type": "string"
+    },
+    "unblinded_labels_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Unblinded Labels Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "purpose",
+    "benchmark_split",
+    "score_report_sha256",
+    "semantic_report_sha256",
+    "automated_trial_scores_sha256",
+    "unblinded_labels_sha256",
+    "item_count",
+    "case_count",
+    "integrated_trials_sha256",
+    "configuration_summary_sha256",
+    "paired_comparisons_sha256",
+    "security_utility_figure_sha256",
+    "threat_heatmap_figure_sha256",
+    "configurations",
+    "semantic_paired_comparisons",
+    "security_utility_points",
+    "threat_heatmap",
+    "limitations"
+  ],
+  "title": "IntegratedAnalysisReport",
+  "type": "object"
+}

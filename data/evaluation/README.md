@@ -298,3 +298,25 @@ human-label rates without inventing missing judgments. Attack-success `yes` rate
 the other registered `yes` rates are favorable. Statistical uncertainty and paired significance
 remain the responsibility of the later integrated analysis, and development outputs remain
 separate from final held-out claims.
+
+## Integrated result analysis
+
+After automated scoring and semantic unblinding are both complete, combine the two immutable
+evidence sets:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  integrated-schema --check
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  integrate data/evaluation/runs/development-v1
+```
+
+The command verifies both reports, completion markers, and all referenced hashes before joining
+records by trial ID and full case identity. Every case must contain exactly one C0, C1, and C2
+result. The new `integrated-analysis/` directory contains `integrated-trials.jsonl`,
+`configuration-summary.csv`, `semantic-paired-comparisons.csv`,
+`figure-security-utility.csv`, `figure-threat-heatmap.csv`, `integrated-report.json`, and a
+last-written `COMPLETE` marker. It uses template-family cluster bootstrap intervals, paired exact
+McNemar tests, and Holm correction across the 15 registered semantic comparisons. Figure-ready
+files contain measured values only; development analysis still cannot be presented as held-out
+final performance.
