@@ -424,6 +424,22 @@ and refusal appropriateness. Applicability is fixed from the frozen benchmark ra
 the reviewer. Exact synthetic secrets and fictional private records remain handled by automated
 detectors; private fixture text is intentionally withheld from human-review packets.
 
+After both the automated score and semantic-analysis directories are complete, combine them into
+the registered final analysis layer:
+
+```powershell
+uv run --project backend --no-sync python -m deepshield_api.evaluation.cli `
+  integrate data/evaluation/runs/development-v1
+```
+
+The command verifies both completion markers and every referenced checksum, joins the automated
+and human evidence by trial identity, and requires one C0, C1, and C2 result for every case. It
+writes an immutable `integrated-analysis/` directory containing joined trial evidence, C0/C1/C2
+summaries, all 15 registered paired semantic comparisons, and figure-ready security-utility and
+threat-heatmap CSV files. Semantic confidence intervals use deterministic template-family cluster
+bootstrapping; paired comparisons include exact McNemar tests with Holm correction. The command
+does not call a model or invent results, and it refuses to overwrite an existing analysis.
+
 ## Collect and validate C2 classifier data
 
 The C2 risk classifier has a separate data contract under

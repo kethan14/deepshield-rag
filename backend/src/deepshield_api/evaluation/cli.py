@@ -31,6 +31,13 @@ from deepshield_api.evaluation.audit import (
     write_text_artifact,
 )
 from deepshield_api.evaluation.generation import build_draft_benchmark
+from deepshield_api.evaluation.integrated import (
+    IntegratedAnalysisError,
+    integrate_completed_analysis,
+    render_integrated_report_schema,
+    write_integrated_analysis,
+    write_integrated_report_schema,
+)
 from deepshield_api.evaluation.manifest import (
     BenchmarkManifestError,
     load_benchmark_manifest,
@@ -88,6 +95,7 @@ DEFAULT_ADJUDICATION_SCHEMA_PATH = Path("data/evaluation/adjudication-manifest.s
 DEFAULT_AGREEMENT_SCHEMA_PATH = Path("data/evaluation/adjudication-agreement.schema.json")
 DEFAULT_CONSENSUS_SCHEMA_PATH = Path("data/evaluation/adjudication-consensus.schema.json")
 DEFAULT_SEMANTIC_SCHEMA_PATH = Path("data/evaluation/semantic-analysis.schema.json")
+DEFAULT_INTEGRATED_SCHEMA_PATH = Path("data/evaluation/integrated-analysis.schema.json")
 
 
 def _resolve_from_root(path: Path, repository_root: Path) -> Path:
@@ -142,6 +150,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     semantic_schema_parser.add_argument("--output", type=Path, default=DEFAULT_SEMANTIC_SCHEMA_PATH)
     semantic_schema_parser.add_argument("--check", action="store_true")
+
+    integrated_schema_parser = subparsers.add_parser(
+        "integrated-schema", help="Export the integrated-analysis report schema."
+    )
+    integrated_schema_parser.add_argument(
+        "--output", type=Path, default=DEFAULT_INTEGRATED_SCHEMA_PATH
+    )
+    integrated_schema_parser.add_argument("--check", action="store_true")
 
     generate_parser = subparsers.add_parser(
         "generate", help="Generate the deterministic draft benchmark and safety fixtures."
@@ -248,6 +264,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Unblind locked consensus labels and summarize semantic outcomes.",
     )
     unblind_parser.add_argument("package_directory", type=Path)
+
+    integrated_parser = subparsers.add_parser(
+        "integrate",
+        help="Combine completed automated scores and unblinded semantic labels.",
+    )
+    integrated_parser.add_argument("run_directory", type=Path)
     return parser
 
 
@@ -333,6 +355,22 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         write_semantic_report_schema(output)
         print(f"Wrote semantic-analysis schema: {output}")
+        return 0
+
+    if args.command == "integrated-schema":
+        output = Path(args.output)
+        expected = render_integrated_report_schema()
+        if args.check:
+            if not output.is_file() or output.read_text(encoding="utf-8") != expected:
+                print(
+                    f"Integrated-analysis schema is missing or out of date: {output}",
+                    file=sys.stderr,
+                )
+                return 1
+            print(f"Integrated-analysis schema is current: {output}")
+            return 0
+        write_integrated_report_schema(output)
+        print(f"Wrote integrated-analysis schema: {output}")
         return 0
 
     if args.command == "generate":
@@ -602,6 +640,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Unblinded {completed_semantic.report.item_count} resolved labels across "
             f"{len(completed_semantic.report.configurations)} configurations: {output}"
+        )
+        return 0
+
+    if args.command == "integrate":
+        try:
+            completed_integrated = integrate_completed_analysis(Path(args.run_directory))
+            output = write_integrated_analysis(Path(args.run_directory), completed_integrated)
+        except (IntegratedAnalysisError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(
+            f"Integrated {completed_integrated.report.item_count} trials with "
+            f"{len(completed_integrated.report.semantic_paired_comparisons)} paired "
+            f"semantic comparisons: {output}"
         )
         return 0
 
